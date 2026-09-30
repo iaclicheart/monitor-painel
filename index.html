@@ -9,6 +9,7 @@
 <title>Monitor de Sistemas | Clicheart</title>
 <link rel="icon" href="./favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+<script>if(window.top!==window.self){document.documentElement.innerHTML='';throw new Error('monitor não abre dentro de outra página');}</script>
 <script>(function(){var t='dark';try{t=localStorage.getItem('clicheart-theme')||'dark'}catch(e){}document.documentElement.setAttribute('data-theme',t);})();</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -424,7 +425,8 @@ function card(it, ctx){
   const deps = it.deps.map((d) => ctx.byId[d]).filter(Boolean);
   const depsDown = deps.filter((d) => d.status === 'down');
   const usedBy = ctx.usedBy[it.id] || [];
-  const url = safeUrl(it.url);
+  // Só o painel do Mac tem link para os sistemas; o site (GitHub Pages) mostra apenas o nome.
+  const url = MODE === 'local' ? safeUrl(it.url) : null;
   const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(it.name)}</a>` : esc(it.name);
   return `<div class="panel ${st}"><div class="kbar ${BARC[st]}"></div>
     <div class="it-top"><div class="it-name" title="${esc(it.name)}">${title}</div><span class="tag ${TAGC[st]}">${ICON[st]}${LABEL[st]}</span></div>
