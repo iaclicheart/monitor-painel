@@ -247,8 +247,6 @@ td.muted{color:var(--m)}
     </div>
     <div class="h-right">
       <div class="user-chip" id="modeChip"></div>
-      <button class="h-btn hidden" id="btnCheck" title="Verificar agora"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg><span class="lbl">Verificar agora</span></button>
-      <button class="h-btn hidden" id="btnTest" title="Enviar e-mail de teste"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5 8 9l5.5-4.5"/></svg><span class="lbl">Teste de e-mail</span></button>
       <button class="h-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
       <button class="h-btn out hidden" id="btnOut">Sair</button>
     </div>
@@ -271,7 +269,7 @@ td.muted{color:var(--m)}
 const $ = (s) => document.querySelector(s);
 const REPO = 'iaclicheart/monitor';
 const TOKEN_KEY = 'monitor-gh-token';
-const MODE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'local' : 'github';
+
 const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} }, del(k){ try { localStorage.removeItem(k); } catch {} } };
 
 const ICON = {
@@ -357,21 +355,6 @@ function initParticles(){
 
 // ── DADOS: dois modos, um modelo só ──
 // item = { id, name, what, url, deps, kind, status, detail, ms, since, upPct, spark, sparkLabel, sparkStep }
-async function loadLocal(){
-  const r = await fetch('/api/state', { cache: 'no-store' });
-  if (!r.ok) throw new Error('painel local parado');
-  const s = await r.json();
-  const conv = (kind) => (x) => ({ id: x.id, name: x.name, what: x.what, url: x.url, deps: x.deps, kind,
-    status: x.last?.status || 'none', detail: x.last?.detail || 'primeira verificação em andamento', ms: x.last?.ms, since: x.since,
-    upPct: x.upPct, spark: x.spark, sparkLabel: '60 min', sparkStep: 1 });
-  const g = s.github || {};
-  return { items: [...s.softwares.map(conv('software')), ...s.fornecedores.map(conv('fornecedor'))],
-    updatedAt: s.lastRunAt, incidents: g.incidents || [], closed: g.closed || [], cfBeat: g.vigias?.cloudflare?.updatedAt || null,
-    ghRun: g.lastRun ? { at: g.lastRun.at, ok: g.lastRun.conclusion === 'success', url: g.lastRun.url } : null,
-    ghError: g.checkedAt && !g.ok ? g.error : null,
-    mac: { on: true, at: s.lastRunAt }, intervalLabel: 'a cada 1 min' };
-}
-
 async function ghFile(path, ref){
   const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}${ref ? '?ref=' + ref : ''}`, {
     headers: { authorization: `Bearer ${store.get(TOKEN_KEY)}`, accept: 'application/vnd.github.raw+json' }, cache: 'no-store' });
@@ -381,35 +364,30 @@ async function ghFile(path, ref){
   return r.json();
 }
 async function loadGithub(){
-  const [targets, status, local] = await Promise.all([ghFile('targets.json'), ghFile('status.json', 'status'), ghFile('local.json', 'status')]);
+  const [targets, status] = await Promise.all([ghFile('targets.json'), ghFile('status.json', 'status')]);
   if (!targets) { const e = new Error('chave'); e.auth = true; throw e; }
-  // O Mac confere a cada minuto: se ele está ligado, a visão dele é a mais recente.
-  const macFresh = !!(local?.items && local.netOk !== false && Date.now() - Date.parse(local.updatedAt) < 10 * 60e3);
   const HIST_N = 48;
   const conv = (kind) => (t) => {
     const gh = status?.items?.[t.id];
-    const lc = macFresh ? local.items[t.id] : null;
-    const src = lc || gh;
-    const st = src?.status || 'none';
-    let detail = src?.detail || (t.checks.every((c) => c.type === 'docker') ? 'Visto só pelo Mac, que está desligado agora.' : 'Aguardando a primeira ronda do GitHub.');
-    if (!lc && gh?.divergencia) detail += ` · ${gh.divergencia}`;
+    const st = gh?.status || 'none';
+    let detail = gh?.detail || 'Aguardando a primeira notícia do vigia da Cloudflare.';
+    if (gh?.divergencia) detail += ` · ${gh.divergencia}`;
     const hist = gh?.hist || [];
     const seen = hist.filter((v) => v !== 3);
     const pct = seen.length ? Math.round(seen.filter((v) => v < 2).length / seen.length * 1000) / 10 : null;
-    return { id: t.id, name: t.name, what: t.what, url: t.url, deps: t.deps || [], kind, status: st, detail, ms: gh?.ms, since: src?.since,
-      upPct: pct, upLabel: 'rondas do GitHub', spark: hist.slice(-HIST_N), sparkLabel: `últimas ${Math.min(HIST_N, hist.length) || HIST_N} rondas`, sparkStep: 0 };
+    return { id: t.id, name: t.name, what: t.what, deps: t.deps || [], kind, status: st, detail, ms: gh?.ms, since: gh?.since,
+      upPct: pct, upLabel: 'última semana', spark: hist.slice(-HIST_N), sparkLabel: `últimas ${Math.min(HIST_N, hist.length) || HIST_N} horas`, sparkStep: 60 };
   };
   const inc = status?.incidents && !Array.isArray(status.incidents) ? Object.entries(status.incidents).map(([id, i]) => ({ id, ...i })) : [];
   return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor'))],
-    updatedAt: macFresh ? local.updatedAt : status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
-    ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null,
-    mac: { on: macFresh, at: local?.updatedAt }, intervalLabel: macFresh ? 'visão do Mac, a cada 1 min' : 'visão do GitHub' };
+    updatedAt: status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
+    ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null };
 }
 
 // ── RENDER ──
 let view = 'geral', data = null;
 function strip(it){
-  const n = it.sparkStep === 1 ? 60 : 48;
+  const n = 48;
   const sp = it.spark || [];
   const pad = Array(Math.max(0, n - sp.length)).fill(null);
   const names = ['no ar', 'atenção', 'fora', 'sem visão'];
@@ -425,8 +403,8 @@ function card(it, ctx){
   const deps = it.deps.map((d) => ctx.byId[d]).filter(Boolean);
   const depsDown = deps.filter((d) => d.status === 'down');
   const usedBy = ctx.usedBy[it.id] || [];
-  // Só o painel do Mac tem link para os sistemas; o site (GitHub Pages) mostra apenas o nome.
-  const url = MODE === 'local' ? safeUrl(it.url) : null;
+  // O site mostra só o nome dos sistemas, sem link: ninguém chega a eles por aqui.
+  const url = null;
   const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(it.name)}</a>` : esc(it.name);
   return `<div class="panel ${st}"><div class="kbar ${BARC[st]}"></div>
     <div class="it-top"><div class="it-name" title="${esc(it.name)}">${title}</div><span class="tag ${TAGC[st]}">${ICON[st]}${LABEL[st]}</span></div>
@@ -465,17 +443,16 @@ function render(){
   });
 
   const gr = data.ghRun;
-  // O GitHub atrasa e pula rondas agendadas com frequência (horas): só acusa atraso acima de 6 h.
-  const ghStale = gr && Date.now() - Date.parse(gr.at) > 6 * 3600e3;
-  const ghVal = data.ghError ? 'Sem contato' : !gr ? 'Ainda não rodou' : ghStale ? 'Atrasado' : gr.ok ? 'Ativo' : 'Com erro';
-  const ghCls = data.ghError || (gr && !gr.ok) ? 'bad' : !gr || ghStale ? 'warn' : 'ok';
+  const cfAge = data.cfBeat ? Date.now() - Date.parse(data.cfBeat) : null;
+  const cfCls = cfAge == null ? 'warn' : cfAge <= 2 * 3600e3 ? 'ok' : 'bad';
+  const cfVal = cfAge == null ? 'Sem notícia' : cfCls === 'ok' ? 'Ativo' : 'Calado';
   const kpis = `<div class="kgrid">
     <div class="kc"><div class="kbar ${count(sw, 'down') ? 'b-bad' : count(sw, 'up') === sw.length ? 'b-ok' : 'b-warn'}"></div><div class="klbl">Softwares no ar</div><div class="kval">${count(sw, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${sw.length}</span></div><div class="kfoot">sites, agentes e contêineres</div></div>
     <div class="kc"><div class="kbar ${count(fn, 'down') ? 'b-bad' : count(fn, 'warn') ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Fornecedores operacionais</div><div class="kval">${count(fn, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${fn.length}</span></div><div class="kfoot">${count(fn, 'warn')} com atenção</div></div>
     <div class="kc"><div class="kbar ${down.length ? 'b-bad' : 'b-ok'}"></div><div class="klbl">Fora do ar</div><div class="kval ${down.length ? 'bad' : 'ok'}">${down.length}</div><div class="kfoot">${data.incidents.length} incidente(s) aberto(s)</div></div>
     <div class="kc"><div class="kbar ${warn.length ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Atenção</div><div class="kval ${warn.length ? 'warn' : 'ok'}">${warn.length}</div><div class="kfoot">lento ou problema parcial</div></div>
-    <div class="kc"><div class="kbar b-${ghCls === 'ok' ? 'ok' : ghCls === 'warn' ? 'warn' : 'bad'}"></div><div class="klbl">Vigia do GitHub</div><div class="kval sm ${ghCls}">${ghVal}</div><div class="kfoot">${gr ? `ronda ${ago(gr.at)}${safeUrl(gr.url) ? ` · <a href="${esc(gr.url)}" target="_blank" rel="noopener noreferrer">ver</a>` : ''}` : esc(data.ghError || 'manda os e-mails')}<br>Cloudflare: ${data.cfBeat ? 'sinal de vida ' + ago(data.cfBeat) : 'ainda sem sinal'}</div></div>
-    <div class="kc"><div class="kbar ${data.mac.on ? 'b-ok' : 'b-pend'}"></div><div class="klbl">Mac (contêineres)</div><div class="kval sm ${data.mac.on ? 'ok' : ''}">${data.mac.on ? 'Ligado' : 'Desligado'}</div><div class="kfoot">${data.mac.at ? 'visto ' + ago(data.mac.at) : 'sem dados'}</div></div>
+    <div class="kc"><div class="kbar b-${cfCls === 'ok' ? 'ok' : cfCls === 'warn' ? 'warn' : 'bad'}"></div><div class="klbl">Vigia da Cloudflare</div><div class="kval sm ${cfCls}">${cfVal}</div><div class="kfoot">confere a cada 5 min${data.cfBeat ? ` · notícia ${ago(data.cfBeat)}` : ''}</div></div>
+    <div class="kc"><div class="kbar b-ok"></div><div class="klbl">Confirmação e e-mail</div><div class="kval sm">GitHub</div><div class="kfoot">${gr ? `última ${ago(gr.at)}${safeUrl(gr.url) ? ` · <a href="${esc(gr.url)}" target="_blank" rel="noopener noreferrer">ver</a>` : ''}` : 'aguardando'}</div></div>
   </div>`;
   const alert = down.length ? `<div class="alert">${ICON.alert}<div><b>${down.length === 1 ? '1 item fora do ar' : down.length + ' itens fora do ar'}</b><div>${down.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '';
   const sec = (title, sub, list) => `<div class="sec-h"><h3>${title}</h3><small>${sub}</small></div><div class="igrid">${list.map((i) => card(i, ctx)).join('')}</div>`;
@@ -487,10 +464,11 @@ function render(){
     <div class="panel"><div class="scroll">${(data.closed || []).length ? `<table><thead><tr><th>Incidente</th><th>Quando</th><th>Durou</th></tr></thead><tbody>${data.closed.slice(0, 20).map((i) =>
       `<tr><td>${esc(i.name)}</td><td class="muted">${ago(i.openedAt)}</td><td class="muted">${dur(i.openedAt, i.closedAt)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Nada resolvido ainda.</div>'}</div></div>
     <div class="panel" style="margin-top:.7rem"><div class="it-what" style="font-size:.78rem;line-height:1.6">
-      <b>Quando sai e-mail:</b> só quando o item fica fora pelo tempo mínimo (5 min nos nossos sistemas, 20 min nos fornecedores)
-      e a queda é confirmada de fora da empresa (GitHub) e pelo Mac. Se só um dos dois não abre, é a rede dele: aparece
-      como divergência, sem e-mail. <b>Sem visão</b> (cinza) é quando quem confere não consegue olhar: não é queda.
-      Três ou mais sistemas da VPS fora juntos viram um aviso só, "Servidor da VPS". Lembrete de "continua fora": uma vez por dia.
+      <b>Quem vigia:</b> o vigia da Cloudflare, a cada 5 minutos. <b>Quando sai e-mail:</b> só quando o item fica fora pelo
+      tempo mínimo (5 min nos nossos sistemas, 20 min nos fornecedores) e o GitHub confirma a queda de fora. Se só um dos
+      dois não abre, é a rede dele: aparece como divergência, sem e-mail. <b>Sem visão</b> (cinza) é quando quem confere
+      não consegue olhar: não é queda. Três ou mais sistemas da VPS fora juntos viram um aviso só, "Servidor da VPS".
+      Lembrete de "continua fora": uma vez por dia. Este painel é atualizado de hora em hora (e na hora, quando algo muda).
     </div></div>`;
 
   let body = '';
@@ -499,18 +477,18 @@ function render(){
   else if (view === 'fornecedores') body = sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
   else body = incid;
   $('#main').innerHTML = `<div class="wrap">${body}</div>`;
-  $('#hDate').textContent = data.updatedAt ? `verificado ${ago(data.updatedAt)} · ${data.intervalLabel}` : 'aguardando verificação';
+  $('#hDate').textContent = data.updatedAt ? `atualizado ${ago(data.updatedAt)}` : 'aguardando o vigia';
 }
 
 let busy = false;
 async function refresh(){
   if (busy) return;
   try {
-    data = MODE === 'local' ? await loadLocal() : await loadGithub();
+    data = await loadGithub();
     show('app'); render();
   } catch (e) {
     if (e.auth) { store.del(TOKEN_KEY); show('login'); loginErr('Chave inválida ou sem permissão de leitura no repositório monitor.'); return; }
-    toast(MODE === 'local' ? 'Painel do Mac parado: rode node server.mjs' : 'Sem conexão com o GitHub agora.');
+    toast('Sem conexão com o GitHub agora.');
   }
 }
 
@@ -529,18 +507,6 @@ $('#loginForm').onsubmit = async (ev) => {
 };
 $('#btnOut').onclick = () => { store.del(TOKEN_KEY); data = null; show('login'); };
 
-// ── AÇÕES (só no Mac) ──
-async function post(path, btn, ok){
-  btn.disabled = true; busy = true;
-  try {
-    const r = await fetch(path, { method: 'POST', headers: { 'x-monitor': '1' } });
-    toast(r.ok ? ok : 'Não deu certo. Veja logs/monitor.log.');
-  } catch { toast('Painel do Mac parado.'); }
-  busy = false; btn.disabled = false; refresh();
-}
-$('#btnCheck').onclick = (e) => post('/api/check-now', e.currentTarget, 'Verificação concluída.');
-$('#btnTest').onclick = (e) => post('/api/test-alert', e.currentTarget, 'Teste enviado. O e-mail chega em 1 a 2 minutos.');
-
 document.querySelectorAll('.v-tab').forEach((b) => b.onclick = () => { view = b.dataset.view; render(); $('#main').scrollTop = 0; });
 const tip = $('#tip');
 document.addEventListener('mousemove', (e) => {
@@ -552,16 +518,9 @@ document.addEventListener('mousemove', (e) => {
 });
 
 // ── INÍCIO ──
-if (MODE === 'local') {
-  $('#modeChip').innerHTML = `<span class="chip-av">${ICON.mac}</span><span>Este Mac</span>`;
-  $('#btnCheck').classList.remove('hidden'); $('#btnTest').classList.remove('hidden');
-  refresh(); setInterval(refresh, 15000);
-} else {
-  $('#modeChip').innerHTML = `<span class="chip-av">${ICON.cloud}</span><span>GitHub</span>`;
-  $('#btnOut').classList.remove('hidden');
-  if (store.get(TOKEN_KEY)) refresh(); else show('login');
-  setInterval(() => { if (store.get(TOKEN_KEY)) refresh(); }, 60000);
-}
+$('#modeChip').innerHTML = `<span class="chip-av">${ICON.cloud}</span><span>Cloudflare</span>`;
+if (store.get(TOKEN_KEY)) refresh(); else show('login');
+setInterval(() => { if (store.get(TOKEN_KEY)) refresh(); }, 60000);
 })();
 </script>
 </body>
