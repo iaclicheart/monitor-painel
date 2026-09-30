@@ -463,7 +463,8 @@ function render(){
   });
 
   const gr = data.ghRun;
-  const ghStale = gr && Date.now() - Date.parse(gr.at) > 75 * 60e3;
+  // O GitHub atrasa e pula rondas agendadas com frequência (horas): só acusa atraso acima de 6 h.
+  const ghStale = gr && Date.now() - Date.parse(gr.at) > 6 * 3600e3;
   const ghVal = data.ghError ? 'Sem contato' : !gr ? 'Ainda não rodou' : ghStale ? 'Atrasado' : gr.ok ? 'Ativo' : 'Com erro';
   const ghCls = data.ghError || (gr && !gr.ok) ? 'bad' : !gr || ghStale ? 'warn' : 'ok';
   const kpis = `<div class="kgrid">
