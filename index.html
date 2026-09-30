@@ -151,7 +151,7 @@ main{flex:1;overflow-y:auto;padding:1.4rem 1.5rem 3rem}
 [data-theme="light"] .t-ok{color:#047857}[data-theme="light"] .t-warn{color:#b45309}[data-theme="light"] .t-bad{color:#b91c1c}[data-theme="light"] .t-pend{color:#475569}
 .strip{display:flex;gap:2px;height:16px;margin-top:.7rem}
 .strip i{flex:1;border-radius:2px;background:var(--idle);min-width:2px}
-.strip i.s0{background:var(--grn)}.strip i.s1{background:#f59e0b}.strip i.s2{background:#ef4444}
+.strip i.s0{background:var(--grn)}.strip i.s1{background:#f59e0b}.strip i.s2{background:#ef4444}.strip i.s3{background:rgba(148,163,184,.45)}
 .strip-lbl{display:flex;justify-content:space-between;font-size:.62rem;color:var(--m);margin-top:.2rem}
 .it-stats{display:flex;flex-wrap:wrap;gap:.2rem .9rem;font-size:.7rem;color:var(--m);margin-top:.5rem;font-variant-numeric:tabular-nums}
 .chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.6rem}
@@ -284,9 +284,10 @@ const ICON = {
   cloud: '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"><path d="M4.5 12.5h7a3 3 0 0 0 .4-6A4.2 4.2 0 0 0 3.8 7.4 2.6 2.6 0 0 0 4.5 12.5Z"/></svg>',
   alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 10v4.5" stroke-linecap="round"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>',
 };
-const LABEL = { up: 'No ar', warn: 'Atenção', down: 'Fora', none: 'Sem dados' };
-const TAGC = { up: 't-ok', warn: 't-warn', down: 't-bad', none: 't-pend' };
-const BARC = { up: 'b-ok', warn: 'b-warn', down: 'b-bad', none: 'b-pend' };
+const LABEL = { up: 'No ar', warn: 'Atenção', down: 'Fora', unknown: 'Sem visão', none: 'Sem dados' };
+const TAGC = { up: 't-ok', warn: 't-warn', down: 't-bad', unknown: 't-pend', none: 't-pend' };
+const BARC = { up: 'b-ok', warn: 'b-warn', down: 'b-bad', unknown: 'b-pend', none: 'b-pend' };
+ICON.unknown = ICON.none;
 const RANK = { up: 0, warn: 1, down: 2 };
 const worst = (l) => l.reduce((a, b) => (RANK[b] > RANK[a] ? b : a), 'up');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -364,7 +365,7 @@ async function loadLocal(){
     upPct: x.upPct, spark: x.spark, sparkLabel: '60 min', sparkStep: 1 });
   const g = s.github || {};
   return { items: [...s.softwares.map(conv('software')), ...s.fornecedores.map(conv('fornecedor'))],
-    updatedAt: s.lastRunAt, incidents: g.openIssues || [],
+    updatedAt: s.lastRunAt, incidents: g.incidents || [], closed: g.closed || [],
     ghRun: g.lastRun ? { at: g.lastRun.at, ok: g.lastRun.conclusion === 'success', url: g.lastRun.url } : null,
     ghError: g.checkedAt && !g.ok ? g.error : null,
     mac: { on: true, at: s.lastRunAt }, intervalLabel: 'a cada 1 min' };
@@ -381,27 +382,27 @@ async function ghFile(path, ref){
 async function loadGithub(){
   const [targets, status, local] = await Promise.all([ghFile('targets.json'), ghFile('status.json', 'status'), ghFile('local.json', 'status')]);
   if (!targets) { const e = new Error('chave'); e.auth = true; throw e; }
-  const macFresh = local && Date.now() - Date.parse(local.updatedAt) < 15 * 60e3;
-  const HIST_DAY = 48;
+  // O Mac confere a cada minuto: se ele está ligado, a visão dele é a mais recente.
+  const macFresh = !!(local?.items && local.netOk !== false && Date.now() - Date.parse(local.updatedAt) < 10 * 60e3);
+  const HIST_N = 48;
   const conv = (kind) => (t) => {
     const gh = status?.items?.[t.id];
-    const lc = macFresh ? local.items?.[t.id] : null;
-    const hasDocker = t.checks.some((c) => c.type === 'docker');
-    const hasRemote = t.checks.some((c) => c.type !== 'docker');
-    const parts = [gh, lc].filter(Boolean);
-    let st = parts.length ? worst(parts.map((p) => p.status)) : 'none';
-    let detail = parts.filter((p) => p.status === st).map((p) => p.detail).join(' · ');
-    if (!parts.length) detail = hasDocker && !hasRemote ? 'Visto só pelo Mac, que está desligado agora.' : 'Aguardando a primeira ronda do GitHub.';
-    else if (hasDocker && !lc && st !== 'down') detail += ' · contêiner sem dados (Mac desligado)';
+    const lc = macFresh ? local.items[t.id] : null;
+    const src = lc || gh;
+    const st = src?.status || 'none';
+    let detail = src?.detail || (t.checks.every((c) => c.type === 'docker') ? 'Visto só pelo Mac, que está desligado agora.' : 'Aguardando a primeira ronda do GitHub.');
+    if (!lc && gh?.divergencia) detail += ` · ${gh.divergencia}`;
     const hist = gh?.hist || [];
-    const week = hist.length ? Math.round(hist.filter((v) => v < 2).length / hist.length * 1000) / 10 : null;
-    return { id: t.id, name: t.name, what: t.what, url: t.url, deps: t.deps || [], kind, status: st, detail, ms: gh?.ms, since: gh?.since,
-      upPct: week, upLabel: '7 dias', spark: hist.slice(-HIST_DAY), sparkLabel: '24 h', sparkStep: 30 };
+    const seen = hist.filter((v) => v !== 3);
+    const pct = seen.length ? Math.round(seen.filter((v) => v < 2).length / seen.length * 1000) / 10 : null;
+    return { id: t.id, name: t.name, what: t.what, url: t.url, deps: t.deps || [], kind, status: st, detail, ms: gh?.ms, since: src?.since,
+      upPct: pct, upLabel: 'rondas do GitHub', spark: hist.slice(-HIST_N), sparkLabel: `últimas ${Math.min(HIST_N, hist.length) || HIST_N} rondas`, sparkStep: 0 };
   };
+  const inc = status?.incidents && !Array.isArray(status.incidents) ? Object.entries(status.incidents).map(([id, i]) => ({ id, ...i })) : [];
   return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor'))],
-    updatedAt: status?.updatedAt, incidents: status?.incidents || [],
+    updatedAt: macFresh ? local.updatedAt : status?.updatedAt, incidents: inc, closed: status?.closed || [],
     ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null,
-    mac: { on: !!macFresh, at: local?.updatedAt }, intervalLabel: 'a cada 30 min' };
+    mac: { on: macFresh, at: local?.updatedAt }, intervalLabel: macFresh ? 'visão do Mac, a cada 1 min' : 'visão do GitHub' };
 }
 
 // ── RENDER ──
@@ -410,10 +411,10 @@ function strip(it){
   const n = it.sparkStep === 1 ? 60 : 48;
   const sp = it.spark || [];
   const pad = Array(Math.max(0, n - sp.length)).fill(null);
-  const names = ['no ar', 'atenção', 'fora'];
+  const names = ['no ar', 'atenção', 'fora', 'sem visão'];
   const cells = [...pad, ...sp.slice(-n)].map((v, i) => {
     const mins = (n - 1 - i) * it.sparkStep;
-    const when = mins === 0 ? 'agora' : mins < 60 ? `${mins} min atrás` : `${Math.round(mins / 60 * 10) / 10} h atrás`;
+    const when = !it.sparkStep ? (i === n - 1 ? 'última ronda' : `${n - 1 - i} ronda(s) antes`) : mins === 0 ? 'agora' : mins < 60 ? `${mins} min atrás` : `${Math.round(mins / 60 * 10) / 10} h atrás`;
     return `<i class="${v == null ? '' : 's' + v}" data-tip="${v == null ? 'sem dado' : `${when}: ${names[v]}`}"></i>`;
   }).join('');
   return `<div class="strip">${cells}</div><div class="strip-lbl"><span>${it.sparkLabel}</span><span>agora</span></div>`;
@@ -434,7 +435,7 @@ function card(it, ctx){
     <div class="it-stats">
       <span>${it.upPct == null ? '—' : String(it.upPct).replace('.', ',') + '%'} no ar (${it.upLabel || '24 h'})</span>
       ${it.ms ? `<span>${it.ms} ms</span>` : ''}
-      ${st !== 'none' && it.since ? `<span>${st === 'up' ? 'estável' : 'assim'} ${ago(it.since)}</span>` : ''}
+      ${st !== 'none' && st !== 'unknown' && it.since ? `<span>${st === 'up' ? 'estável' : 'assim'} ${ago(it.since)}</span>` : ''}
     </div>
     ${deps.length ? `<div class="chips">${deps.map((d) => `<span class="chip ${d.status}">${esc(d.name.replace(/ \(.*\)$/, ''))}</span>`).join('')}</div>` : ''}
     ${usedBy.length ? `<div class="used">Usado por: ${usedBy.map(esc).join(', ')}</div>` : ''}
@@ -447,7 +448,7 @@ function render(){
   const usedBy = {};
   for (const it of items) if (it.kind === 'software') for (const d of it.deps) (usedBy[d] ||= []).push(it.name);
   const ctx = { byId, usedBy };
-  const order = { down: 0, warn: 1, none: 2, up: 3 };
+  const order = { down: 0, warn: 1, unknown: 2, none: 3, up: 4 };
   const sorted = (kind) => items.filter((i) => i.kind === kind).sort((a, b) => order[a.status] - order[b.status] || a.name.localeCompare(b.name, 'pt-BR'));
   const sw = sorted('software'), fn = sorted('fornecedor');
   const down = items.filter((i) => i.status === 'down'), warn = items.filter((i) => i.status === 'warn');
@@ -466,7 +467,7 @@ function render(){
   const ghVal = data.ghError ? 'Sem contato' : !gr ? 'Ainda não rodou' : ghStale ? 'Atrasado' : gr.ok ? 'Ativo' : 'Com erro';
   const ghCls = data.ghError || (gr && !gr.ok) ? 'bad' : !gr || ghStale ? 'warn' : 'ok';
   const kpis = `<div class="kgrid">
-    <div class="kc"><div class="kbar ${count(sw, 'up') === sw.length ? 'b-ok' : 'b-bad'}"></div><div class="klbl">Softwares no ar</div><div class="kval">${count(sw, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${sw.length}</span></div><div class="kfoot">sites, agentes e contêineres</div></div>
+    <div class="kc"><div class="kbar ${count(sw, 'down') ? 'b-bad' : count(sw, 'up') === sw.length ? 'b-ok' : 'b-warn'}"></div><div class="klbl">Softwares no ar</div><div class="kval">${count(sw, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${sw.length}</span></div><div class="kfoot">sites, agentes e contêineres</div></div>
     <div class="kc"><div class="kbar ${count(fn, 'down') ? 'b-bad' : count(fn, 'warn') ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Fornecedores operacionais</div><div class="kval">${count(fn, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${fn.length}</span></div><div class="kfoot">${count(fn, 'warn')} com atenção</div></div>
     <div class="kc"><div class="kbar ${down.length ? 'b-bad' : 'b-ok'}"></div><div class="klbl">Fora do ar</div><div class="kval ${down.length ? 'bad' : 'ok'}">${down.length}</div><div class="kfoot">${data.incidents.length} incidente(s) aberto(s)</div></div>
     <div class="kc"><div class="kbar ${warn.length ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Atenção</div><div class="kval ${warn.length ? 'warn' : 'ok'}">${warn.length}</div><div class="kfoot">lento ou problema parcial</div></div>
@@ -475,9 +476,19 @@ function render(){
   </div>`;
   const alert = down.length ? `<div class="alert">${ICON.alert}<div><b>${down.length === 1 ? '1 item fora do ar' : down.length + ' itens fora do ar'}</b><div>${down.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '';
   const sec = (title, sub, list) => `<div class="sec-h"><h3>${title}</h3><small>${sub}</small></div><div class="igrid">${list.map((i) => card(i, ctx)).join('')}</div>`;
-  const incid = `<div class="sec-h"><h3>Incidentes abertos</h3><small>cada um gerou e-mail; fecham sozinhos quando o item volta</small></div>
-    <div class="panel"><div class="scroll">${data.incidents.length ? `<table><thead><tr><th>#</th><th>Incidente</th><th>Aberto</th></tr></thead><tbody>${data.incidents.map((i) =>
-      `<tr><td class="muted">${Number(i.number)}</td><td>${safeUrl(i.url) ? `<a href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a>` : esc(i.title)}</td><td class="muted">${ago(i.at)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Nenhum incidente aberto.</div>'}</div></div>`;
+  const dur = (a, b) => { const m = Math.round((Date.parse(b) - Date.parse(a)) / 60000); return m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 6) / 10} h` : `${Math.round(m / 144) / 10} dias`; };
+  const incid = `<div class="sec-h"><h3>Incidentes abertos</h3><small>cada um gerou um e-mail; fecham sozinhos quando o item volta</small></div>
+    <div class="panel"><div class="scroll">${data.incidents.length ? `<table><thead><tr><th>Incidente</th><th>Desde</th><th>Motivo</th></tr></thead><tbody>${data.incidents.map((i) =>
+      `<tr><td><b>${esc(i.name)}</b>${i.members?.length ? `<div class="it-what">${esc(i.members.join(', '))}</div>` : ''}</td><td class="muted">${ago(i.openedAt)}</td><td class="muted" style="white-space:normal">${esc(i.detail || '')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Nenhum incidente aberto.</div>'}</div></div>
+    <div class="sec-h"><h3>Resolvidos</h3><small>os últimos ${Math.min(20, (data.closed || []).length)}</small></div>
+    <div class="panel"><div class="scroll">${(data.closed || []).length ? `<table><thead><tr><th>Incidente</th><th>Quando</th><th>Durou</th></tr></thead><tbody>${data.closed.slice(0, 20).map((i) =>
+      `<tr><td>${esc(i.name)}</td><td class="muted">${ago(i.openedAt)}</td><td class="muted">${dur(i.openedAt, i.closedAt)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Nada resolvido ainda.</div>'}</div></div>
+    <div class="panel" style="margin-top:.7rem"><div class="it-what" style="font-size:.78rem;line-height:1.6">
+      <b>Quando sai e-mail:</b> só quando o item fica fora pelo tempo mínimo (5 min nos nossos sistemas, 20 min nos fornecedores)
+      e a queda é confirmada de fora da empresa (GitHub) e pelo Mac. Se só um dos dois não abre, é a rede dele: aparece
+      como divergência, sem e-mail. <b>Sem visão</b> (cinza) é quando quem confere não consegue olhar: não é queda.
+      Três ou mais sistemas da VPS fora juntos viram um aviso só, "Servidor da VPS". Lembrete de "continua fora": uma vez por dia.
+    </div></div>`;
 
   let body = '';
   if (view === 'geral') body = kpis + alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw) + sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
