@@ -365,7 +365,7 @@ async function loadLocal(){
     upPct: x.upPct, spark: x.spark, sparkLabel: '60 min', sparkStep: 1 });
   const g = s.github || {};
   return { items: [...s.softwares.map(conv('software')), ...s.fornecedores.map(conv('fornecedor'))],
-    updatedAt: s.lastRunAt, incidents: g.incidents || [], closed: g.closed || [],
+    updatedAt: s.lastRunAt, incidents: g.incidents || [], closed: g.closed || [], cfBeat: g.vigias?.cloudflare?.updatedAt || null,
     ghRun: g.lastRun ? { at: g.lastRun.at, ok: g.lastRun.conclusion === 'success', url: g.lastRun.url } : null,
     ghError: g.checkedAt && !g.ok ? g.error : null,
     mac: { on: true, at: s.lastRunAt }, intervalLabel: 'a cada 1 min' };
@@ -400,7 +400,7 @@ async function loadGithub(){
   };
   const inc = status?.incidents && !Array.isArray(status.incidents) ? Object.entries(status.incidents).map(([id, i]) => ({ id, ...i })) : [];
   return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor'))],
-    updatedAt: macFresh ? local.updatedAt : status?.updatedAt, incidents: inc, closed: status?.closed || [],
+    updatedAt: macFresh ? local.updatedAt : status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
     ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null,
     mac: { on: macFresh, at: local?.updatedAt }, intervalLabel: macFresh ? 'visão do Mac, a cada 1 min' : 'visão do GitHub' };
 }
@@ -472,7 +472,7 @@ function render(){
     <div class="kc"><div class="kbar ${count(fn, 'down') ? 'b-bad' : count(fn, 'warn') ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Fornecedores operacionais</div><div class="kval">${count(fn, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${fn.length}</span></div><div class="kfoot">${count(fn, 'warn')} com atenção</div></div>
     <div class="kc"><div class="kbar ${down.length ? 'b-bad' : 'b-ok'}"></div><div class="klbl">Fora do ar</div><div class="kval ${down.length ? 'bad' : 'ok'}">${down.length}</div><div class="kfoot">${data.incidents.length} incidente(s) aberto(s)</div></div>
     <div class="kc"><div class="kbar ${warn.length ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Atenção</div><div class="kval ${warn.length ? 'warn' : 'ok'}">${warn.length}</div><div class="kfoot">lento ou problema parcial</div></div>
-    <div class="kc"><div class="kbar b-${ghCls === 'ok' ? 'ok' : ghCls === 'warn' ? 'warn' : 'bad'}"></div><div class="klbl">Vigia do GitHub</div><div class="kval sm ${ghCls}">${ghVal}</div><div class="kfoot">${gr ? `ronda ${ago(gr.at)}${safeUrl(gr.url) ? ` · <a href="${esc(gr.url)}" target="_blank" rel="noopener noreferrer">ver</a>` : ''}` : esc(data.ghError || 'manda os e-mails')}</div></div>
+    <div class="kc"><div class="kbar b-${ghCls === 'ok' ? 'ok' : ghCls === 'warn' ? 'warn' : 'bad'}"></div><div class="klbl">Vigia do GitHub</div><div class="kval sm ${ghCls}">${ghVal}</div><div class="kfoot">${gr ? `ronda ${ago(gr.at)}${safeUrl(gr.url) ? ` · <a href="${esc(gr.url)}" target="_blank" rel="noopener noreferrer">ver</a>` : ''}` : esc(data.ghError || 'manda os e-mails')}<br>Cloudflare: ${data.cfBeat ? 'sinal de vida ' + ago(data.cfBeat) : 'ainda sem sinal'}</div></div>
     <div class="kc"><div class="kbar ${data.mac.on ? 'b-ok' : 'b-pend'}"></div><div class="klbl">Mac (contêineres)</div><div class="kval sm ${data.mac.on ? 'ok' : ''}">${data.mac.on ? 'Ligado' : 'Desligado'}</div><div class="kfoot">${data.mac.at ? 'visto ' + ago(data.mac.at) : 'sem dados'}</div></div>
   </div>`;
   const alert = down.length ? `<div class="alert">${ICON.alert}<div><b>${down.length === 1 ? '1 item fora do ar' : down.length + ' itens fora do ar'}</b><div>${down.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '';
