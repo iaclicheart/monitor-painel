@@ -8,30 +8,35 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'; object-src 'none'"/>
 <title>Monitor de Sistemas | Clicheart</title>
 <link rel="icon" href="./favicon.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
 <script>if(window.top!==window.self){document.documentElement.innerHTML='';throw new Error('monitor não abre dentro de outra página');}</script>
-<script>(function(){var t='dark';try{t=localStorage.getItem('clicheart-theme')||'dark'}catch(e){}document.documentElement.setAttribute('data-theme',t);})();</script>
+<script>
+  // Tema: claro é o padrão em todos os apps (pedido do dono, 06/10/2026). Reset ÚNICO: quem tinha
+  // 'dark' salvo volta para o claro uma vez; depois disso o botão de alternar do painel é respeitado.
+  (function(){var t='light';try{if(localStorage.getItem('clicheart-theme-v')!=='2'){localStorage.setItem('clicheart-theme','light');localStorage.setItem('clicheart-theme-v','2');}t=localStorage.getItem('clicheart-theme')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="./particles.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root,[data-theme="dark"]{
-  --bg:#020617;--s1:rgba(15,23,42,.55);--s2:rgba(30,41,59,.6);
-  --b:rgba(255,255,255,.08);--bh:rgba(255,255,255,.15);
-  --t:#F8FAFC;--m:#94a3b8;--acc:#1A5CA4;--acc2:#DD1A22;
-  --grn:#10b981;--red:#f87171;
-  --glass-bg:rgba(255,255,255,.03);
-  --brand-blue:#1A5CA4;--brand-red:#DD1A22;
-  --idle:rgba(255,255,255,.08);
-}
-[data-theme="light"]{
+:root,[data-theme="light"]{
   --bg:#F7F8FC;--s1:rgba(255,255,255,.85);--s2:rgba(240,242,248,.9);
   --b:rgba(15,23,42,.1);--bh:rgba(15,23,42,.18);
   --t:#0F172A;--m:#475569;--acc:#1A5CA4;--acc2:#DD1A22;
   --grn:#16a34a;--red:#dc2626;
+  --glass-bg:rgba(255,255,255,.03);
+  --brand-blue:#1A5CA4;--brand-red:#DD1A22;
   --idle:rgba(15,23,42,.08);
 }
-html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--t);overflow:hidden}
-button{font-family:'Inter',sans-serif;cursor:pointer}
-input{font-family:'Inter',sans-serif}
+[data-theme="dark"]{
+  --bg:#020617;--s1:rgba(15,23,42,.55);--s2:rgba(30,41,59,.6);
+  --b:rgba(255,255,255,.08);--bh:rgba(255,255,255,.15);
+  --t:#F8FAFC;--m:#94a3b8;--acc:#1A5CA4;--acc2:#DD1A22;
+  --grn:#10b981;--red:#f87171;
+  --idle:rgba(255,255,255,.08);
+}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t);overflow:hidden}
+button{font-family:'Outfit',sans-serif;cursor:pointer}
+input{font-family:'Outfit',sans-serif}
 a{color:inherit}
 .hidden{display:none!important}
 
@@ -50,36 +55,57 @@ a{color:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader-txt{font-size:.82rem;color:var(--m)}
 
-/* LOGIN */
-#loginScreen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--bg);isolation:isolate}
+/* LOGIN — igual ao login padrão Clicheart (estoque.clicheart.com.br), no claro.
+   Aqui o campo é a CHAVE de leitura do GitHub (o site não tem servidor nem usuário/senha). */
+#loginScreen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--bg);isolation:isolate;overflow-y:auto}
 #login-particles{position:fixed;inset:0;z-index:0;pointer-events:auto}
-.login-card{position:relative;z-index:1;width:100%;max-width:460px;
-  background:rgba(2,6,23,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+.login-card{
+  position:relative;z-index:1;margin:auto;
+  width:100%;max-width:460px;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border:1px solid var(--b);border-top:2px solid var(--brand-red);
-  border-radius:20px;padding:2.5rem;text-align:center;box-shadow:0 25px 80px rgba(0,0,0,.4)}
+  border-radius:20px;padding:2.5rem;text-align:center;
+  box-shadow:0 25px 80px rgba(0,0,0,.4);
+}
 .login-clicheart-logo{margin-bottom:.6rem}
-.login-clicheart-logo img{height:44px;object-fit:contain}
-.login-logo{font-size:1.125rem;font-weight:700;letter-spacing:-.3px;margin-bottom:.25rem;color:var(--t)}
-.login-sub{color:#555570;font-size:.82rem;margin-bottom:2rem}
+.login-clicheart-logo img{height:60px;max-width:100%;object-fit:contain}
+.login-welcome{font-size:1.15rem;font-weight:700;color:#0f172a;letter-spacing:-.3px;margin-bottom:.25rem}
+.login-sub{color:var(--m);font-size:.85rem;margin-bottom:1.8rem}
+#loginForm{text-align:left;margin-top:.25rem}
+.pwd-lbl{display:block;color:#475569;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
+.pwd-inp-wrap{position:relative;margin-bottom:8px}
+.pwd-inp{width:100%;padding:.72rem .9rem;background:rgba(15,23,42,.04);border:1px solid rgba(15,23,42,.18);border-radius:10px;color:var(--t);font-size:.92rem;font-family:'Outfit',sans-serif;outline:none;transition:all .2s}
+.pwd-inp:focus{border-color:rgba(26,92,164,.6);box-shadow:0 0 0 3px rgba(26,92,164,.15);background:rgba(255,255,255,.09)}
+#tokInp{padding-right:64px}
+.pwd-show{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555570;cursor:pointer;font-size:12px;padding:4px;font-family:'Outfit',sans-serif}
+.pwd-err-box{display:flex;align-items:flex-start;gap:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:9px 12px;margin:10px 0}
+.pwd-err-icon{color:#dc2626;font-size:1rem;line-height:1;flex-shrink:0}
+.pwd-err-txt{color:#b91c1c;font-size:12px;line-height:1.5}
+.pwd-ok-btn{width:100%;margin-top:16px;padding:.78rem;background:linear-gradient(90deg,var(--brand-blue),var(--brand-red));border:none;border-radius:10px;color:#fff;font-size:.92rem;font-weight:700;transition:all .2s;box-shadow:0 6px 20px rgba(26,92,164,.35);cursor:pointer}
+.pwd-ok-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.pwd-ok-btn:disabled{background:#1a2438;color:#64748b;box-shadow:none;cursor:default;transform:none}
+.pwd-spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 .shake{animation:shake .4s ease}
-.lf{text-align:left}
-.lf-lbl{display:block;color:#6a6a8a;font-size:.66rem;font-weight:600;margin:.75rem 0 .35rem;text-transform:uppercase;letter-spacing:.05em}
-.lf-lbl:first-child{margin-top:0}
-.lf-inp{width:100%;padding:.7rem .85rem;border-radius:10px;border:1px solid var(--b);background:rgba(255,255,255,.06);color:var(--t);font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s}
-.lf-inp:focus{border-color:rgba(26,92,164,.6);box-shadow:0 0 0 3px rgba(26,92,164,.15)}
-.lf-pwwrap{position:relative}
-.lf-pwwrap .lf-inp{padding-right:4.2rem}
-.lf-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6a6a8a;font-size:.72rem;cursor:pointer;padding:4px 6px}
-.lf-eye:hover{color:var(--t)}
-.lf-btn{width:100%;margin-top:1.1rem;padding:.8rem;border-radius:10px;border:none;background:linear-gradient(90deg,var(--brand-blue),var(--brand-red));color:#fff;font-weight:700;font-size:.88rem;letter-spacing:.3px;transition:box-shadow .2s,transform .2s,opacity .2s}
-.lf-btn:hover:not(:disabled){box-shadow:0 6px 20px rgba(26,92,164,.35);transform:translateY(-1px)}
-.lf-btn:disabled{opacity:.6;cursor:default}
-.lf-err{display:flex;gap:.5rem;align-items:flex-start;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:.55rem .7rem;margin-top:.75rem;font-size:.76rem;color:#fca5a5;line-height:1.45}
-.lf-note{font-size:.72rem;color:var(--m);margin-top:1rem;line-height:1.6}
-.lf-note ol{padding-left:1.1rem;margin-top:.35rem}
-.lf-note a{color:#93c5fd}
-[data-theme="light"] .lf-lbl,[data-theme="light"] .lf-eye{color:#64748b}
+/* autofill do Chrome: claro (o estoque pintava de azul-marinho) */
+input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px #ffffff inset!important;-webkit-text-fill-color:#0F172A!important}
+/* dica discreta embaixo do botão + como criar a chave (recolhido, para o cartão ficar igual ao modelo) */
+.login-dica{margin-top:14px;text-align:center;color:var(--m);font-size:11.5px;line-height:1.45}
+.login-ajuda{margin-top:8px;color:var(--m);font-size:11.5px;line-height:1.6;text-align:left}
+.login-ajuda summary{cursor:pointer;text-align:center;color:#1A5CA4;font-weight:600;list-style:none}
+.login-ajuda summary::-webkit-details-marker{display:none}
+.login-ajuda summary:hover{text-decoration:underline}
+.login-ajuda ol{padding-left:1.1rem;margin-top:.5rem}
+.login-ajuda a{color:#1d4ed8}
+.login-ajuda b{color:var(--t);font-weight:600}
+/* escuro: só para quem escolher no botão de tema do painel */
+[data-theme="dark"] .login-card{background:rgba(2,6,23,.92)}
+[data-theme="dark"] .login-welcome{color:var(--t)}
+[data-theme="dark"] .pwd-lbl,[data-theme="dark"] .pwd-show{color:#94a3b8}
+[data-theme="dark"] .pwd-inp{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
+[data-theme="dark"] .pwd-err-txt{color:#fca5a5}
+[data-theme="dark"] .login-ajuda summary,[data-theme="dark"] .login-ajuda a{color:#93c5fd}
+[data-theme="dark"] input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px #0f172a inset!important;-webkit-text-fill-color:#F8FAFC!important}
 
 /* APP */
 #appScreen{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:transparent}
@@ -149,7 +175,7 @@ main{flex:1;overflow-y:auto;padding:1.4rem 1.5rem 3rem}
 .t-warn{background:rgba(245,158,11,.15);color:#fbbf24}
 .t-bad{background:rgba(239,68,68,.15);color:#f87171}
 .t-pend{background:rgba(148,163,184,.18);color:#cbd5e1}
-[data-theme="light"] .t-ok{color:#047857}[data-theme="light"] .t-warn{color:#b45309}[data-theme="light"] .t-bad{color:#b91c1c}[data-theme="light"] .t-pend{color:#475569}
+[data-theme="light"] .t-ok{color:#15803d}[data-theme="light"] .t-warn{color:#b45309}[data-theme="light"] .t-bad{color:#b91c1c}[data-theme="light"] .t-pend{color:#475569}
 .strip{display:flex;gap:2px;height:16px;margin-top:.7rem}
 .strip i{flex:1;border-radius:2px;background:var(--idle);min-width:2px}
 .strip i.s0{background:var(--grn)}.strip i.s1{background:#f59e0b}.strip i.s2{background:#ef4444}.strip i.s3{background:rgba(148,163,184,.45)}
@@ -176,17 +202,27 @@ td.muted{color:var(--m)}
 .scroll{overflow:auto}
 .empty{color:var(--m);text-align:center;padding:2rem 1rem;opacity:.6;font-size:.86rem}
 
-#toast{position:fixed;bottom:1.4rem;right:1.4rem;z-index:100;background:rgba(15,23,42,.96);backdrop-filter:blur(20px);border:1px solid var(--b);border-radius:11px;padding:.7rem 1.1rem;font-size:.83rem;color:#F8FAFC;box-shadow:0 10px 30px rgba(0,0,0,.4);transform:translateY(160%);transition:transform .3s;max-width:340px}
-#toast.show{transform:translateY(0)}
+#toast{position:fixed;bottom:1.4rem;right:1.4rem;z-index:100;background:rgba(15,23,42,.96);backdrop-filter:blur(20px);border:1px solid var(--b);border-radius:11px;padding:.7rem 1.1rem;font-size:.83rem;color:#F8FAFC;box-shadow:0 10px 30px rgba(0,0,0,.4);transform:translateY(160%);visibility:hidden;transition:transform .3s,visibility .3s;max-width:340px}
+#toast.show{transform:translateY(0);visibility:visible}
 .tip{position:fixed;pointer-events:none;background:rgba(15,23,42,.96);color:#F8FAFC;border:1px solid var(--b);font-size:.72rem;padding:.3rem .55rem;border-radius:7px;display:none;z-index:90;white-space:nowrap}
 
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
 [data-theme="light"] .bg-mesh{background:#F7F8FC}
 [data-theme="light"] .blob{opacity:.12}
-[data-theme="light"] header,[data-theme="light"] .login-card{background:rgba(247,248,252,.92)}
+[data-theme="light"] header{background:rgba(247,248,252,.92)}
 [data-theme="light"] .h-btn{background:rgba(15,23,42,.04)}
 [data-theme="light"] .user-chip,[data-theme="light"] .v-tab.on{color:#1A5CA4}
+[data-theme="light"] .h-date{background:rgba(15,23,42,.04)}
+[data-theme="light"] .h-btn:hover{background:rgba(15,23,42,.07)}
+[data-theme="light"] .v-tab:hover:not(.on){background:rgba(15,23,42,.05)}
+[data-theme="light"] .v-tab .cnt{background:rgba(239,68,68,.12);color:#b91c1c}
+[data-theme="light"] .kc .kfoot a{color:#1d4ed8}
+[data-theme="light"] .kval.ok{color:#15803d}[data-theme="light"] .kval.warn{color:#b45309}[data-theme="light"] .kval.bad{color:#b91c1c}
+[data-theme="light"] .alert svg{color:#dc2626}
+[data-theme="light"] tbody tr:hover td{background:rgba(15,23,42,.03)}
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18)}
+[data-theme="light"] .loader{border-color:rgba(15,23,42,.1);border-top-color:var(--acc)}
 
 @media(max-width:860px){.h-date{display:none}}
 @media(max-width:560px){
@@ -201,7 +237,6 @@ td.muted{color:var(--m)}
   main{padding:1.1rem 1rem 3rem}
   .view-tabs{padding:.5rem 1rem}
   .igrid{grid-template-columns:1fr}
-  .login-card{padding:1.8rem 1.3rem}
 }
 </style>
 </head>
@@ -214,26 +249,27 @@ td.muted{color:var(--m)}
   <div id="login-particles"></div>
   <div class="login-card">
     <div class="login-clicheart-logo"><img src="./logo.png" alt="Clicheart"></div>
-    <div class="login-logo">Monitor de Sistemas</div>
-    <div class="login-sub">Softwares e fornecedores · Clicheart</div>
-    <form class="lf" id="loginForm" autocomplete="off">
-      <label class="lf-lbl" for="tokInp">Chave de acesso</label>
-      <div class="lf-pwwrap">
-        <input class="lf-inp" id="tokInp" type="password" placeholder="github_pat_…" spellcheck="false" autocomplete="off">
-        <button type="button" class="lf-eye" id="tokEye">ver</button>
+    <div class="login-welcome">Bem-vindo de volta</div>
+    <div class="login-sub">Monitor · Sites e fornecedores</div>
+    <form id="loginForm" autocomplete="off">
+      <label class="pwd-lbl" for="tokInp">Chave de acesso</label>
+      <div class="pwd-inp-wrap">
+        <input class="pwd-inp" id="tokInp" type="password" placeholder="github_pat_…" spellcheck="false" autocomplete="off" autocapitalize="off">
+        <button type="button" class="pwd-show" id="tokEye">ver</button>
       </div>
-      <div id="loginErr" class="lf-err hidden"></div>
-      <button class="lf-btn" id="loginBtn" type="submit">Entrar</button>
+      <div id="loginErr"></div>
+      <button type="submit" class="pwd-ok-btn" id="loginBtn">Entrar</button>
+      <p class="login-dica">A chave fica guardada só neste navegador e só consegue ler o monitor.</p>
     </form>
-    <div class="lf-note" style="text-align:left">
-      A chave fica guardada só neste navegador e só consegue <b>ler</b> o monitor. Para criar uma:
+    <details class="login-ajuda">
+      <summary>Como criar uma chave</summary>
       <ol>
         <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">github.com › nova chave</a> (conta iaclicheart).</li>
         <li><b>Repository access</b>: <i>Only select repositories</i> › <b>monitor</b>.</li>
         <li><b>Permissions</b> › <b>Contents</b>: <i>Read-only</i>. Nada mais.</li>
         <li>Clique em <b>Generate token</b>, copie e cole aqui.</li>
       </ol>
-    </div>
+    </details>
   </div>
 </div>
 
@@ -314,43 +350,36 @@ function show(s){
   $('#loginScreen').style.display = s === 'login' ? '' : 'none';
   $('#appScreen').style.display = s === 'app' ? '' : 'none';
   $('.bg-mesh').classList.toggle('login-mode', s === 'login');
-  if (s === 'login') initParticles();
+  if (s === 'login') initParticles(); else stopParticles();
 }
+// Partículas do login padrão (particles.js 2.0.0 local — mesmo arquivo do cdnjs). Só rodam com a
+// tela de entrada aberta: ao entrar no painel o desenho é desligado para não gastar CPU.
 function initParticles(){
-  if (window._pInit) return; window._pInit = true;
-  const container = document.getElementById('login-particles');
-  const canvas = document.createElement('canvas'); canvas.style.cssText = 'position:fixed;inset:0;display:block;';
-  container.appendChild(canvas);
-  const ctx = canvas.getContext('2d'); const mouse = { x: null, y: null };
-  const COLORS = ['#1A5CA4', '#DD1A22', '#ffffff'], COUNT = 110, LINK = 170, GRAB = 140;
-  const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
-  resize(); addEventListener('resize', resize);
-  const make = (x, y, ttl) => ({ x: x != null ? x : Math.random() * canvas.width, y: y != null ? y : Math.random() * canvas.height,
-    r: Math.random() * 2.5 + 1.2, color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    vx: (Math.random() - .5) * 2, vy: (Math.random() - .5) * 2, opacity: Math.random() * .45 + .30, ttl });
-  const pts = Array.from({ length: COUNT }, () => make());
-  canvas.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-  canvas.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
-  canvas.addEventListener('click', (e) => { for (let i = 0; i < 4; i++) pts.push(make(e.clientX + (Math.random() - .5) * 20, e.clientY + (Math.random() - .5) * 20, 280)); while (pts.length > COUNT + 20) pts.shift(); });
-  const draw = () => {
-    if ($('#loginScreen').style.display === 'none') { requestAnimationFrame(draw); return; }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < pts.length; i++) {
-      const a = pts[i];
-      for (let j = i + 1; j < pts.length; j++) { const b = pts[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy);
-        if (d < LINK) { ctx.beginPath(); ctx.strokeStyle = `rgba(26,92,164,${.40 * (1 - d / LINK)})`; ctx.lineWidth = .8; ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } }
-      if (mouse.x != null) { const dx = a.x - mouse.x, dy = a.y - mouse.y, d = Math.sqrt(dx * dx + dy * dy);
-        if (d < GRAB) { ctx.beginPath(); ctx.strokeStyle = `rgba(26,92,164,${.80 * (1 - d / GRAB)})`; ctx.lineWidth = 1; ctx.moveTo(a.x, a.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); } }
-    }
-    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i];
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = p.opacity; ctx.fill(); ctx.globalAlpha = 1;
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < -10) p.x = canvas.width + 10; else if (p.x > canvas.width + 10) p.x = -10;
-      if (p.y < -10) p.y = canvas.height + 10; else if (p.y > canvas.height + 10) p.y = -10;
-      if (p.ttl != null) { p.ttl--; if (p.ttl <= 0) pts.splice(i, 1); } }
-    requestAnimationFrame(draw);
-  };
-  draw();
+  if (typeof particlesJS === 'undefined' || window._pInit) return;
+  window._pInit = true;
+  if (!Array.isArray(window.pJSDom)) window.pJSDom = [];
+  particlesJS('login-particles', {
+    particles: {
+      number: { value: 110, density: { enable: true, value_area: 800 } },
+      color: { value: ['#1A5CA4', '#DD1A22', '#ffffff'] },
+      shape: { type: 'circle' },
+      opacity: { value: 0.75, random: true, anim: { enable: true, speed: 1, opacity_min: 0.30, sync: false } },
+      size: { value: 3.7, random: true, anim: { enable: true, speed: 2, size_min: 1.2, sync: false } },
+      line_linked: { enable: true, distance: 170, color: '#1A5CA4', opacity: 0.4, width: 1 },
+      move: { enable: true, speed: 2, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
+    },
+    interactivity: {
+      detect_on: 'canvas',
+      events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: true, mode: 'push' }, resize: true },
+      modes: { grab: { distance: 140, line_linked: { opacity: 1 } }, push: { particles_nb: 4 } }
+    },
+    retina_detect: true
+  });
+}
+function stopParticles(){
+  if (!window._pInit) return;
+  try { (window.pJSDom || []).forEach((p) => p.pJS.fn.vendors.destroypJS()); } catch (e) {}
+  window.pJSDom = []; window._pInit = false;
 }
 
 // ── DADOS: dois modos, um modelo só ──
@@ -487,25 +516,32 @@ async function refresh(){
     data = await loadGithub();
     show('app'); render();
   } catch (e) {
-    if (e.auth) { store.del(TOKEN_KEY); show('login'); loginErr('Chave inválida ou sem permissão de leitura no repositório monitor.'); return; }
+    if (e.auth) { store.del(TOKEN_KEY); show('login'); loginErr('Chave inválida ou sem permissão de leitura no repositório monitor.'); shake(); return; }
+    if ($('#loginScreen').style.display !== 'none') { loginErr('Sem conexão com o GitHub agora. Tente novamente.'); return; }
     toast('Sem conexão com o GitHub agora.');
   }
 }
 
 // ── LOGIN (site) ──
-function loginErr(msg){ const e = $('#loginErr'); e.textContent = msg; e.classList.remove('hidden'); }
+function loginErr(msg){
+  $('#loginErr').innerHTML = msg ? `<div class="pwd-err-box"><span class="pwd-err-icon">⚠</span><span class="pwd-err-txt">${esc(msg)}</span></div>` : '';
+}
+function shake(){ const c = $('.login-card'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 450); }
 $('#tokEye').onclick = () => { const i = $('#tokInp'); const s = i.type === 'password'; i.type = s ? 'text' : 'password'; $('#tokEye').textContent = s ? 'ocultar' : 'ver'; };
 $('#loginForm').onsubmit = async (ev) => {
   ev.preventDefault();
   const tok = $('#tokInp').value.trim();
-  $('#loginErr').classList.add('hidden');
-  if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(tok)) { loginErr('Isso não parece uma chave do GitHub. Ela começa com github_pat_.'); const c = $('.login-card'); c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 450); return; }
-  $('#loginBtn').disabled = true; $('#loginBtn').textContent = 'Conferindo…';
+  loginErr('');
+  if (!tok) { loginErr('Cole a sua chave de acesso.'); shake(); $('#tokInp').focus(); return; }
+  if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(tok)) { loginErr('Isso não parece uma chave do GitHub. Ela começa com github_pat_.'); shake(); $('#tokInp').focus(); return; }
+  const btn = $('#loginBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="pwd-spinner"></span>Entrando…';
   store.set(TOKEN_KEY, tok);
   await refresh();
-  $('#loginBtn').disabled = false; $('#loginBtn').textContent = 'Entrar'; $('#tokInp').value = '';
+  btn.disabled = false; btn.textContent = 'Entrar'; $('#tokInp').value = '';
+  if ($('#loginScreen').style.display !== 'none') $('#tokInp').focus();
 };
-$('#btnOut').onclick = () => { store.del(TOKEN_KEY); data = null; show('login'); };
+$('#btnOut').onclick = () => { store.del(TOKEN_KEY); data = null; loginErr(''); show('login'); setTimeout(() => $('#tokInp').focus(), 80); };
 
 document.querySelectorAll('.v-tab').forEach((b) => b.onclick = () => { view = b.dataset.view; render(); $('#main').scrollTop = 0; });
 const tip = $('#tip');
@@ -519,7 +555,7 @@ document.addEventListener('mousemove', (e) => {
 
 // ── INÍCIO ──
 $('#modeChip').innerHTML = `<span class="chip-av">${ICON.cloud}</span><span>Cloudflare</span>`;
-if (store.get(TOKEN_KEY)) refresh(); else show('login');
+if (store.get(TOKEN_KEY)) refresh(); else { show('login'); setTimeout(() => $('#tokInp').focus(), 80); }
 setInterval(() => { if (store.get(TOKEN_KEY)) refresh(); }, 60000);
 })();
 </script>
