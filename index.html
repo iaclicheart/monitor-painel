@@ -291,6 +291,7 @@ td.muted{color:var(--m)}
     <button class="v-tab on" data-view="geral">Visão geral</button>
     <button class="v-tab" data-view="softwares">Softwares</button>
     <button class="v-tab" data-view="fornecedores">Fornecedores</button>
+    <button class="v-tab" data-view="powerbi">Power BI</button>
     <button class="v-tab" data-view="incidentes">Incidentes</button>
   </div>
   <main id="main"><div class="wrap"><div class="empty">Carregando…</div></div></main>
@@ -408,7 +409,15 @@ async function loadGithub(){
       upPct: pct, upLabel: 'última semana', spark: hist.slice(-HIST_N), sparkLabel: `últimas ${Math.min(HIST_N, hist.length) || HIST_N} horas`, sparkStep: 60 };
   };
   const inc = status?.incidents && !Array.isArray(status.incidents) ? Object.entries(status.incidents).map(([id, i]) => ({ id, ...i })) : [];
-  return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor'))],
+  // Modelos do Power BI: não estão no targets.json, o monitor acha sozinho e grava no status.json.
+  const pbi = Object.entries(status?.items || {}).filter(([, v]) => v.kind === 'powerbi').map(([id, v]) => {
+    const hist = v.hist || [];
+    const seen = hist.filter((x) => x !== 3);
+    return { id, name: v.name, what: v.ws ? `Workspace ${v.ws}` : '', deps: [], kind: 'powerbi', status: v.status || 'none', detail: v.detail || '', since: v.since,
+      upPct: seen.length ? Math.round(seen.filter((x) => x < 2).length / seen.length * 1000) / 10 : null, upLabel: 'última semana',
+      spark: hist.slice(-HIST_N), sparkLabel: `últimas ${Math.min(HIST_N, hist.length) || HIST_N} horas`, sparkStep: 60 };
+  });
+  return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor')), ...pbi],
     updatedAt: status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
     ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null };
 }
@@ -419,7 +428,7 @@ function strip(it){
   const n = 48;
   const sp = it.spark || [];
   const pad = Array(Math.max(0, n - sp.length)).fill(null);
-  const names = ['no ar', 'atenção', 'fora', 'sem visão'];
+  const names = it.kind === 'powerbi' ? ['em dia', 'atenção', 'não atualizou', 'sem visão'] : ['no ar', 'atenção', 'fora', 'sem visão'];
   const cells = [...pad, ...sp.slice(-n)].map((v, i) => {
     const mins = (n - 1 - i) * it.sparkStep;
     const when = !it.sparkStep ? (i === n - 1 ? 'última ronda' : `${n - 1 - i} ronda(s) antes`) : mins === 0 ? 'agora' : mins < 60 ? `${mins} min atrás` : `${Math.round(mins / 60 * 10) / 10} h atrás`;
@@ -436,13 +445,13 @@ function card(it, ctx){
   const url = null;
   const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(it.name)}</a>` : esc(it.name);
   return `<div class="panel ${st}"><div class="kbar ${BARC[st]}"></div>
-    <div class="it-top"><div class="it-name" title="${esc(it.name)}">${title}</div><span class="tag ${TAGC[st]}">${ICON[st]}${LABEL[st]}</span></div>
+    <div class="it-top"><div class="it-name" title="${esc(it.name)}">${title}</div><span class="tag ${TAGC[st]}">${ICON[st]}${(it.kind === 'powerbi' && { up: 'Em dia', down: 'Não atualizou' }[st]) || LABEL[st]}</span></div>
     ${it.what ? `<div class="it-what">${esc(it.what)}</div>` : ''}
     <div class="it-detail">${esc(it.detail)}</div>
     ${depsDown.length && st !== 'down' ? `<div class="affected">Pode ser afetado: ${depsDown.map((d) => esc(d.name)).join(', ')} com problema</div>` : ''}
     ${strip(it)}
     <div class="it-stats">
-      <span>${it.upPct == null ? '—' : String(it.upPct).replace('.', ',') + '%'} no ar (${it.upLabel || '24 h'})</span>
+      <span>${it.upPct == null ? '—' : String(it.upPct).replace('.', ',') + '%'} ${it.kind === 'powerbi' ? 'em dia' : 'no ar'} (${it.upLabel || '24 h'})</span>
       ${it.ms ? `<span>${it.ms} ms</span>` : ''}
       ${st !== 'none' && st !== 'unknown' && it.since ? `<span>${st === 'up' ? 'estável' : 'assim'} ${ago(it.since)}</span>` : ''}
     </div>
@@ -459,14 +468,16 @@ function render(){
   const ctx = { byId, usedBy };
   const order = { down: 0, warn: 1, unknown: 2, none: 3, up: 4 };
   const sorted = (kind) => items.filter((i) => i.kind === kind).sort((a, b) => order[a.status] - order[b.status] || a.name.localeCompare(b.name, 'pt-BR'));
-  const sw = sorted('software'), fn = sorted('fornecedor');
-  const down = items.filter((i) => i.status === 'down'), warn = items.filter((i) => i.status === 'warn');
+  const sw = sorted('software'), fn = sorted('fornecedor'), pb = sorted('powerbi');
+  const sistemas = items.filter((i) => i.kind !== 'powerbi');
+  const down = sistemas.filter((i) => i.status === 'down'), warn = sistemas.filter((i) => i.status === 'warn');
+  const pbDown = pb.filter((i) => i.status === 'down');
   const count = (l, s) => l.filter((i) => i.status === s).length;
 
-  document.title = down.length ? `(${down.length}) FORA — Monitor | Clicheart` : 'Monitor de Sistemas | Clicheart';
+  document.title = down.length ? `(${down.length}) FORA — Monitor | Clicheart` : pbDown.length ? `(${pbDown.length}) Power BI — Monitor | Clicheart` : 'Monitor de Sistemas | Clicheart';
   document.querySelectorAll('.v-tab').forEach((b) => {
     b.classList.toggle('on', b.dataset.view === view);
-    const n = b.dataset.view === 'softwares' ? count(sw, 'down') : b.dataset.view === 'fornecedores' ? count(fn, 'down') : b.dataset.view === 'incidentes' ? data.incidents.length : 0;
+    const n = b.dataset.view === 'softwares' ? count(sw, 'down') : b.dataset.view === 'fornecedores' ? count(fn, 'down') : b.dataset.view === 'powerbi' ? pbDown.length : b.dataset.view === 'incidentes' ? data.incidents.length : 0;
     const base = b.textContent.replace(/\d+$/, '').trim();
     b.innerHTML = esc(base) + (n ? `<span class="cnt">${n}</span>` : '');
   });
@@ -478,12 +489,20 @@ function render(){
   const kpis = `<div class="kgrid">
     <div class="kc"><div class="kbar ${count(sw, 'down') ? 'b-bad' : count(sw, 'up') === sw.length ? 'b-ok' : 'b-warn'}"></div><div class="klbl">Softwares no ar</div><div class="kval">${count(sw, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${sw.length}</span></div><div class="kfoot">sites, agentes e contêineres</div></div>
     <div class="kc"><div class="kbar ${count(fn, 'down') ? 'b-bad' : count(fn, 'warn') ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Fornecedores operacionais</div><div class="kval">${count(fn, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${fn.length}</span></div><div class="kfoot">${count(fn, 'warn')} com atenção</div></div>
+    ${pb.length ? `<div class="kc"><div class="kbar ${pbDown.length ? 'b-bad' : count(pb, 'up') === pb.length ? 'b-ok' : 'b-warn'}"></div><div class="klbl">Power BI em dia</div><div class="kval">${count(pb, 'up')}<span style="font-size:1rem;color:var(--m);font-weight:600"> / ${pb.length}</span></div><div class="kfoot">atualizações agendadas no horário</div></div>` : ''}
     <div class="kc"><div class="kbar ${down.length ? 'b-bad' : 'b-ok'}"></div><div class="klbl">Fora do ar</div><div class="kval ${down.length ? 'bad' : 'ok'}">${down.length}</div><div class="kfoot">${data.incidents.length} incidente(s) aberto(s)</div></div>
     <div class="kc"><div class="kbar ${warn.length ? 'b-warn' : 'b-ok'}"></div><div class="klbl">Atenção</div><div class="kval ${warn.length ? 'warn' : 'ok'}">${warn.length}</div><div class="kfoot">lento ou problema parcial</div></div>
     <div class="kc"><div class="kbar b-${cfCls === 'ok' ? 'ok' : cfCls === 'warn' ? 'warn' : 'bad'}"></div><div class="klbl">Vigia da Cloudflare</div><div class="kval sm ${cfCls}">${cfVal}</div><div class="kfoot">confere a cada 5 min${data.cfBeat ? ` · notícia ${ago(data.cfBeat)}` : ''}</div></div>
     <div class="kc"><div class="kbar b-ok"></div><div class="klbl">Confirmação e e-mail</div><div class="kval sm">GitHub</div><div class="kfoot">${gr ? `última ${ago(gr.at)}${safeUrl(gr.url) ? ` · <a href="${esc(gr.url)}" target="_blank" rel="noopener noreferrer">ver</a>` : ''}` : 'aguardando'}</div></div>
   </div>`;
-  const alert = down.length ? `<div class="alert">${ICON.alert}<div><b>${down.length === 1 ? '1 item fora do ar' : down.length + ' itens fora do ar'}</b><div>${down.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '';
+  const alert = (down.length ? `<div class="alert">${ICON.alert}<div><b>${down.length === 1 ? '1 item fora do ar' : down.length + ' itens fora do ar'}</b><div>${down.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '')
+    + (pbDown.length ? `<div class="alert">${ICON.alert}<div><b>Power BI: ${pbDown.length === 1 ? '1 modelo não atualizou' : pbDown.length + ' modelos não atualizaram'}</b><div>${pbDown.map((d) => esc(d.name)).join(' · ')}</div></div></div>` : '');
+  const notaPbi = `<div class="panel" style="margin-top:.7rem"><div class="it-what" style="font-size:.78rem;line-height:1.6">
+      <b>Como o monitor confere o Power BI:</b> ele aprende sozinho os horários agendados de cada modelo (últimas 2 semanas)
+      e avisa quando um horário passa 1h30 sem a atualização rodar. Ele vê <b>se rodou</b>, pelo registro de atividades da
+      Microsoft, mas não o resultado: se rodar e der erro, isso só aparece no ESKO_BI - Nordeste, o único modelo em que o
+      acesso do monitor pode ler o histórico. Modelo novo entra aqui sozinho.
+    </div></div>`;
   const sec = (title, sub, list) => `<div class="sec-h"><h3>${title}</h3><small>${sub}</small></div><div class="igrid">${list.map((i) => card(i, ctx)).join('')}</div>`;
   const dur = (a, b) => { const m = Math.round((Date.parse(b) - Date.parse(a)) / 60000); return m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 6) / 10} h` : `${Math.round(m / 144) / 10} dias`; };
   const incid = `<div class="sec-h"><h3>Incidentes abertos</h3><small>cada um gerou um e-mail; fecham sozinhos quando o item volta</small></div>
@@ -498,10 +517,13 @@ function render(){
       dois não abre, é a rede dele: aparece como divergência, sem e-mail. <b>Sem visão</b> (cinza) é quando quem confere
       não consegue olhar: não é queda. Três ou mais sistemas da VPS fora juntos viram um aviso só, "Servidor da VPS".
       Lembrete de "continua fora": uma vez por dia. Este painel é atualizado de hora em hora (e na hora, quando algo muda).
+      <b>Power BI:</b> vira incidente quando uma atualização agendada passa 1h30 do horário sem rodar.
     </div></div>`;
 
   let body = '';
-  if (view === 'geral') body = kpis + alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw) + sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
+  const secPb = pb.length ? sec('Power BI', `${count(pb, 'up')} de ${pb.length} em dia`, pb) : '';
+  if (view === 'geral') body = kpis + alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw) + secPb + sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
+  else if (view === 'powerbi') body = (pb.length ? secPb : '<div class="empty">Aguardando a primeira conferência do Power BI.</div>') + notaPbi;
   else if (view === 'softwares') body = alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw);
   else if (view === 'fornecedores') body = sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
   else body = incid;
