@@ -1,0 +1,53 @@
+/* Privacidade e cookies — kit único dos sites Clicheart (13/10/2026). Só classes clp-*, sem depender do CSS do app. */
+.clp-barra, .clp-janela { font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif; color: #0F172A; }
+.clp-barra {
+  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 2147483000;
+  max-width: 980px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, .16); padding: 14px 16px;
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+}
+.clp-barra-txt { margin: 0; flex: 1 1 340px; font-size: 13.5px; line-height: 1.5; color: #334155; }
+.clp-acoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.clp-bt {
+  font: inherit; font-size: 13px; font-weight: 600; border-radius: 9px; padding: 8px 14px; cursor: pointer;
+  border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; min-height: 36px;
+}
+.clp-bt:focus-visible { outline: 3px solid #93C5FD; outline-offset: 2px; }
+.clp-pri { background: #1A40A0; border-color: #1A40A0; color: #FFFFFF; }
+.clp-pri:hover { background: #163a91; }
+.clp-sec:hover { background: #F1F5F9; }
+.clp-link { border-color: transparent; background: transparent; color: #1A40A0; text-decoration: underline; padding-left: 6px; padding-right: 6px; }
+.clp-fundo {
+  position: fixed; inset: 0; z-index: 2147483001; background: rgba(15, 23, 42, .45);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.clp-janela {
+  background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 23, 42, .3);
+  width: 100%; max-width: 620px; max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+}
+.clp-tit { margin: 0; padding: 18px 20px 6px; font-size: 19px; font-weight: 700; }
+.clp-corpo { padding: 4px 20px 8px; overflow: auto; }
+.clp-sub { margin: 14px 0 4px; font-size: 13px; font-weight: 700; color: #1A40A0; text-transform: uppercase; letter-spacing: .04em; }
+.clp-p { margin: 0; font-size: 14px; line-height: 1.55; color: #334155; }
+.clp-opcoes { margin: 16px 0 6px; display: grid; gap: 8px; }
+.clp-opcao { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #E2E8F0; border-radius: 11px; padding: 11px 12px; cursor: pointer; }
+.clp-opcao input { width: 18px; height: 18px; margin-top: 2px; accent-color: #1A40A0; }
+.clp-travado { cursor: default; background: #F8FAFC; }
+.clp-opcao-txt { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.clp-opcao-desc { color: #64748B; font-size: 13px; }
+.clp-janela > .clp-acoes { padding: 12px 20px 16px; border-top: 1px solid #E2E8F0; }
+.clp-rodape-link { color: inherit; text-decoration: underline; cursor: pointer; }
+[data-theme="dark"] .clp-barra, [data-theme="dark"] .clp-janela { background: #0F172A; color: #E2E8F0; border-color: #334155; }
+[data-theme="dark"] .clp-barra-txt, [data-theme="dark"] .clp-p { color: #CBD5E1; }
+[data-theme="dark"] .clp-bt { background: #1E293B; color: #E2E8F0; border-color: #334155; }
+[data-theme="dark"] .clp-pri { background: #3B82F6; border-color: #3B82F6; color: #FFFFFF; }
+[data-theme="dark"] .clp-link { background: transparent; color: #93C5FD; }
+[data-theme="dark"] .clp-sub { color: #93C5FD; }
+[data-theme="dark"] .clp-opcao { border-color: #334155; }
+[data-theme="dark"] .clp-travado { background: #1E293B; }
+@media (max-width: 600px) {
+  .clp-barra { left: 8px; right: 8px; bottom: 8px; padding: 12px; }
+  .clp-acoes { width: 100%; }
+  .clp-acoes .clp-bt { flex: 1 1 auto; }
+}
+@media print { .clp-barra, .clp-fundo { display: none !important; } }

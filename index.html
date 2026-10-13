@@ -10,6 +10,8 @@
 <link rel="icon" href="./favicon.png" type="image/png">
 <link rel="stylesheet" href="./cl-login/login.css"><!-- login padrão Clicheart + fontes da marca (Outfit inclusive) no próprio site -->
 <script>if(window.top!==window.self){document.documentElement.innerHTML='';throw new Error('monitor não abre dentro de outra página');}</script>
+<link rel="stylesheet" href="cl-login/privacidade.css?v=1">
+<script src="cl-login/privacidade.js?v=1"></script>   <!-- aviso de privacidade e cookies (LGPD): antes de gravar preferência -->
 <script>
   // Tema: claro é o padrão em todos os apps (pedido do dono, 06/10/2026). Reset ÚNICO: quem tinha
   // 'dark' salvo volta para o claro uma vez; depois disso o botão de alternar do painel é respeitado.
@@ -253,6 +255,7 @@ td.muted{color:var(--m)}
     <div class="h-right">
       <div class="user-chip" id="modeChip"></div>
       <button class="h-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+      <button class="h-btn" type="button" data-cl-privacidade title="Privacidade e cookies">Privacidade</button>
       <button class="h-btn out" id="btnOut">Sair</button>
     </div>
   </header>
