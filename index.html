@@ -47,6 +47,8 @@ a{color:inherit}
 .b3{top:40%;left:40%;width:40vw;height:40vw;background:#1A5CA4;animation-delay:-10s}
 @keyframes fl{0%{transform:translate(0,0) scale(1)}100%{transform:translate(6%,12%) scale(1.15)}}
 .bg-mesh.login-mode .blob{opacity:0!important;transition:opacity .4s}
+/* fundo liso, igual ao estoque (13/10/2026, pedido do dono: todos os sites com o layout do estoque) */
+.bg-mesh .blob{display:none}
 
 /* LOADER */
 .loader-wrap{display:flex;flex-direction:column;align-items:center;gap:.85rem;padding:1.5rem 0}
@@ -172,6 +174,7 @@ td.muted{color:var(--m)}
 [data-theme="light"] header{background:rgba(247,248,252,.92)}
 [data-theme="light"] .h-btn{background:rgba(15,23,42,.04)}
 [data-theme="light"] .user-chip,[data-theme="light"] .v-tab.on{color:#1A5CA4}
+[data-theme="light"] .v-tab.on{color:#1d4ed8;background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.35)}
 [data-theme="light"] .h-date{background:rgba(15,23,42,.04)}
 [data-theme="light"] .h-btn:hover{background:rgba(15,23,42,.07)}
 [data-theme="light"] .v-tab:hover:not(.on){background:rgba(15,23,42,.05)}
