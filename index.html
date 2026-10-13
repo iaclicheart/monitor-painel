@@ -205,7 +205,7 @@ td.muted{color:var(--m)}
 
 <!-- LOGIN (só no site: pede a chave de leitura do GitHub) -->
 <div id="loginScreen" class="cl-login" style="display:none">
-  <img class="cl-arte" src="./cl-login/reticula.svg" alt="" aria-hidden="true">
+  <img class="cl-arte" src="./cl-login/reticula.svg?v=4" alt="" aria-hidden="true">
   <img class="cl-logo" src="./logo.png" alt="Clicheart">
   <main class="cl-tela">
     <section class="cl-cartao" id="loginCard">
@@ -250,7 +250,7 @@ td.muted{color:var(--m)}
     <div class="h-right">
       <div class="user-chip" id="modeChip"></div>
       <button class="h-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
-      <button class="h-btn out hidden" id="btnOut">Sair</button>
+      <button class="h-btn out" id="btnOut">Sair</button>
     </div>
   </header>
   <div class="view-tabs">
@@ -497,7 +497,12 @@ $('#loginForm').onsubmit = async (ev) => {
   btn.disabled = false; btn.textContent = 'Entrar'; $('#tokInp').value = '';
   if ($('#loginScreen').style.display !== 'none') $('#tokInp').focus();
 };
-$('#btnOut').onclick = () => { store.del(TOKEN_KEY); data = null; loginErr(''); show('login'); setTimeout(() => $('#tokInp').focus(), 80); };
+// Sair: apaga a chave deste navegador e volta para a entrada (o botão sumiu por engano em d1e5fee, junto com o modo do Mac)
+$('#btnOut').onclick = () => {
+  store.del(TOKEN_KEY); data = null; loginErr(''); show('login');
+  if ($('#tokInp').type === 'text') document.querySelector('[data-cl-olho="tokInp"]').click();   // chave volta escondida, olho em sincronia
+  setTimeout(() => $('#tokInp').focus(), 80);
+};
 
 document.querySelectorAll('.v-tab').forEach((b) => b.onclick = () => { view = b.dataset.view; render(); $('#main').scrollTop = 0; });
 const tip = $('#tip');

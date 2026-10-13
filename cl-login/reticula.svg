@@ -1,25 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMinYMin slice">
-  <!-- Retícula do login Clicheart: pontos em 4 ângulos (15°, 75°, 0°, 45°), cor = degradê do logo (azul → vermelho). -->
+  <!-- Retícula do login Clicheart (escolha do dono, 13/10/2026 — opção B): duas tintas como na gráfica.
+       Rede AZUL #0B4DA2 a 15° e rede VERMELHA #ED1C24 a 75°, no contorno de sempre. Um azul indo para um vermelho:
+       o ponto azul diminui e o vermelho cresce entre 48% e 81% do degradê do logo (área do ponto = tom, r = 2·√tom),
+       em faixas verticais de ~1 ponto de largura. Gerado por design/login-kit/gerar-reticula.py. -->
   <defs>
-    <pattern id="bC" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4.0" cy="4.0" r="2.0" fill="#fff"/></pattern>
-    <mask id="fC" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><path d="M1700 -40 L1700 1000 C 820 900, 700 700, 760 480 S 640 120, 500 -40 Z" fill="#fff"/></mask>
-    <pattern id="bM" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4.0" cy="4.0" r="1.9" fill="#fff"/></pattern>
-    <mask id="fM" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><path d="M1700 -40 L1700 1000 C 900 860, 560 760, 600 520 S 820 220, 660 -40 Z" fill="#fff"/></mask>
-    <pattern id="bY" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(0)"><circle cx="4.0" cy="4.0" r="2.0" fill="#fff"/></pattern>
-    <mask id="fY" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><path d="M1700 -40 L1700 820 C 930 700, 880 520, 940 360 S 820 80, 760 -40 Z" fill="#fff"/></mask>
-    <pattern id="bK" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="4.0" cy="4.0" r="1.3" fill="#fff"/></pattern>
-    <mask id="fK" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><path d="M1700 -40 L1700 1000 C 960 900, 880 760, 900 640 S 1020 300, 900 -40 Z" fill="#fff"/></mask>
-    <radialGradient id="some" cx="85%" cy="15%" r="85%"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
-    <mask id="mk" maskUnits="userSpaceOnUse" x="-400" y="-600" width="2400" height="2600"><rect x="-400" width="2200" height="1000" fill="url(#some)"/></mask>
-    <mask id="pontos" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600">
-      <g transform="matrix(-1 0 0 1 1000 0)"><g mask="url(#mk)" transform="translate(-260 0)">
-        <g mask="url(#fC)" opacity="0.85"><rect x="-600" y="-600" width="2800" height="2600" fill="url(#bC)"/></g>
-        <g mask="url(#fM)" opacity="0.8"><rect x="-600" y="-600" width="2800" height="2600" fill="url(#bM)"/></g>
-        <g mask="url(#fY)" opacity="0.95"><rect x="-600" y="-600" width="2800" height="2600" fill="url(#bY)"/></g>
-        <g mask="url(#fK)" opacity="0.9"><rect x="-600" y="-600" width="2800" height="2600" fill="url(#bK)"/></g>
-      </g></g>
-    </mask>
-    <linearGradient id="logo" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="620" y2="0"><stop offset="0" stop-color="#0B4DA2"/><stop offset=".48" stop-color="#0B4DA2"/><stop offset=".58" stop-color="#534A89"/><stop offset=".67" stop-color="#914167"/><stop offset=".75" stop-color="#CF2C3B"/><stop offset=".81" stop-color="#ED1C24"/><stop offset="1" stop-color="#ED1C24"/></linearGradient>
+    <mask id="forma" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><path d="M1700 -40 L1700 1000 C 820 900, 700 700, 760 480 S 640 120, 500 -40 Z" fill="#fff"/><path d="M1700 -40 L1700 1000 C 900 860, 560 760, 600 520 S 820 220, 660 -40 Z" fill="#fff"/><path d="M1700 -40 L1700 820 C 930 700, 880 520, 940 360 S 820 80, 760 -40 Z" fill="#fff"/><path d="M1700 -40 L1700 1000 C 960 900, 880 760, 900 640 S 1020 300, 900 -40 Z" fill="#fff"/></mask>
+    <pattern id="a0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="2.00" fill="#fff"/></pattern>
+    <pattern id="a1" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.98" fill="#fff"/></pattern>
+    <pattern id="v1" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.28" fill="#fff"/></pattern>
+    <pattern id="a2" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.94" fill="#fff"/></pattern>
+    <pattern id="v2" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.48" fill="#fff"/></pattern>
+    <pattern id="a3" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.90" fill="#fff"/></pattern>
+    <pattern id="v3" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.62" fill="#fff"/></pattern>
+    <pattern id="a4" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.86" fill="#fff"/></pattern>
+    <pattern id="v4" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.73" fill="#fff"/></pattern>
+    <pattern id="a5" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.82" fill="#fff"/></pattern>
+    <pattern id="v5" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.83" fill="#fff"/></pattern>
+    <pattern id="a6" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.78" fill="#fff"/></pattern>
+    <pattern id="v6" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="0.92" fill="#fff"/></pattern>
+    <pattern id="a7" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.73" fill="#fff"/></pattern>
+    <pattern id="v7" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.00" fill="#fff"/></pattern>
+    <pattern id="a8" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.69" fill="#fff"/></pattern>
+    <pattern id="v8" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.07" fill="#fff"/></pattern>
+    <pattern id="a9" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.64" fill="#fff"/></pattern>
+    <pattern id="v9" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.14" fill="#fff"/></pattern>
+    <pattern id="a10" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.59" fill="#fff"/></pattern>
+    <pattern id="v10" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.21" fill="#fff"/></pattern>
+    <pattern id="a11" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.54" fill="#fff"/></pattern>
+    <pattern id="v11" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.27" fill="#fff"/></pattern>
+    <pattern id="a12" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.49" fill="#fff"/></pattern>
+    <pattern id="v12" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.33" fill="#fff"/></pattern>
+    <pattern id="a13" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.44" fill="#fff"/></pattern>
+    <pattern id="v13" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.39" fill="#fff"/></pattern>
+    <pattern id="a14" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.39" fill="#fff"/></pattern>
+    <pattern id="v14" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.44" fill="#fff"/></pattern>
+    <pattern id="a15" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.33" fill="#fff"/></pattern>
+    <pattern id="v15" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.49" fill="#fff"/></pattern>
+    <pattern id="a16" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.27" fill="#fff"/></pattern>
+    <pattern id="v16" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.54" fill="#fff"/></pattern>
+    <pattern id="a17" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.21" fill="#fff"/></pattern>
+    <pattern id="v17" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.59" fill="#fff"/></pattern>
+    <pattern id="a18" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.14" fill="#fff"/></pattern>
+    <pattern id="v18" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.64" fill="#fff"/></pattern>
+    <pattern id="a19" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.07" fill="#fff"/></pattern>
+    <pattern id="v19" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.69" fill="#fff"/></pattern>
+    <pattern id="a20" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="1.00" fill="#fff"/></pattern>
+    <pattern id="v20" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.73" fill="#fff"/></pattern>
+    <pattern id="a21" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.92" fill="#fff"/></pattern>
+    <pattern id="v21" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.78" fill="#fff"/></pattern>
+    <pattern id="a22" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.83" fill="#fff"/></pattern>
+    <pattern id="v22" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.82" fill="#fff"/></pattern>
+    <pattern id="a23" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.73" fill="#fff"/></pattern>
+    <pattern id="v23" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.86" fill="#fff"/></pattern>
+    <pattern id="a24" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.62" fill="#fff"/></pattern>
+    <pattern id="v24" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.90" fill="#fff"/></pattern>
+    <pattern id="a25" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.48" fill="#fff"/></pattern>
+    <pattern id="v25" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.94" fill="#fff"/></pattern>
+    <pattern id="a26" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><circle cx="4" cy="4" r="0.28" fill="#fff"/></pattern>
+    <pattern id="v26" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="1.98" fill="#fff"/></pattern>
+    <pattern id="v27" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(75)"><circle cx="4" cy="4" r="2.00" fill="#fff"/></pattern>
+    <mask id="mAzul" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><g transform="matrix(-1 0 0 1 1000 0)"><g transform="translate(-260 0)"><g mask="url(#forma)"><rect x="962.4" y="-40" width="307.6" height="1080" fill="url(#a0)"/><rect x="954.5" y="-40" width="7.9" height="1080" fill="url(#a1)"/><rect x="946.7" y="-40" width="7.9" height="1080" fill="url(#a2)"/><rect x="938.8" y="-40" width="7.9" height="1080" fill="url(#a3)"/><rect x="930.9" y="-40" width="7.9" height="1080" fill="url(#a4)"/><rect x="923.1" y="-40" width="7.9" height="1080" fill="url(#a5)"/><rect x="915.2" y="-40" width="7.9" height="1080" fill="url(#a6)"/><rect x="907.3" y="-40" width="7.9" height="1080" fill="url(#a7)"/><rect x="899.4" y="-40" width="7.9" height="1080" fill="url(#a8)"/><rect x="891.6" y="-40" width="7.9" height="1080" fill="url(#a9)"/><rect x="883.7" y="-40" width="7.9" height="1080" fill="url(#a10)"/><rect x="875.8" y="-40" width="7.9" height="1080" fill="url(#a11)"/><rect x="868.0" y="-40" width="7.9" height="1080" fill="url(#a12)"/><rect x="860.1" y="-40" width="7.9" height="1080" fill="url(#a13)"/><rect x="852.2" y="-40" width="7.9" height="1080" fill="url(#a14)"/><rect x="844.4" y="-40" width="7.9" height="1080" fill="url(#a15)"/><rect x="836.5" y="-40" width="7.9" height="1080" fill="url(#a16)"/><rect x="828.6" y="-40" width="7.9" height="1080" fill="url(#a17)"/><rect x="820.8" y="-40" width="7.9" height="1080" fill="url(#a18)"/><rect x="812.9" y="-40" width="7.9" height="1080" fill="url(#a19)"/><rect x="805.0" y="-40" width="7.9" height="1080" fill="url(#a20)"/><rect x="797.1" y="-40" width="7.9" height="1080" fill="url(#a21)"/><rect x="789.3" y="-40" width="7.9" height="1080" fill="url(#a22)"/><rect x="781.4" y="-40" width="7.9" height="1080" fill="url(#a23)"/><rect x="773.5" y="-40" width="7.9" height="1080" fill="url(#a24)"/><rect x="765.7" y="-40" width="7.9" height="1080" fill="url(#a25)"/><rect x="757.8" y="-40" width="7.9" height="1080" fill="url(#a26)"/></g></g></g></mask>
+    <mask id="mVerm" maskUnits="userSpaceOnUse" x="-600" y="-600" width="2800" height="2600"><g transform="matrix(-1 0 0 1 1000 0)"><g transform="translate(-260 0)"><g mask="url(#forma)"><rect x="954.5" y="-40" width="7.9" height="1080" fill="url(#v1)"/><rect x="946.7" y="-40" width="7.9" height="1080" fill="url(#v2)"/><rect x="938.8" y="-40" width="7.9" height="1080" fill="url(#v3)"/><rect x="930.9" y="-40" width="7.9" height="1080" fill="url(#v4)"/><rect x="923.1" y="-40" width="7.9" height="1080" fill="url(#v5)"/><rect x="915.2" y="-40" width="7.9" height="1080" fill="url(#v6)"/><rect x="907.3" y="-40" width="7.9" height="1080" fill="url(#v7)"/><rect x="899.4" y="-40" width="7.9" height="1080" fill="url(#v8)"/><rect x="891.6" y="-40" width="7.9" height="1080" fill="url(#v9)"/><rect x="883.7" y="-40" width="7.9" height="1080" fill="url(#v10)"/><rect x="875.8" y="-40" width="7.9" height="1080" fill="url(#v11)"/><rect x="868.0" y="-40" width="7.9" height="1080" fill="url(#v12)"/><rect x="860.1" y="-40" width="7.9" height="1080" fill="url(#v13)"/><rect x="852.2" y="-40" width="7.9" height="1080" fill="url(#v14)"/><rect x="844.4" y="-40" width="7.9" height="1080" fill="url(#v15)"/><rect x="836.5" y="-40" width="7.9" height="1080" fill="url(#v16)"/><rect x="828.6" y="-40" width="7.9" height="1080" fill="url(#v17)"/><rect x="820.8" y="-40" width="7.9" height="1080" fill="url(#v18)"/><rect x="812.9" y="-40" width="7.9" height="1080" fill="url(#v19)"/><rect x="805.0" y="-40" width="7.9" height="1080" fill="url(#v20)"/><rect x="797.1" y="-40" width="7.9" height="1080" fill="url(#v21)"/><rect x="789.3" y="-40" width="7.9" height="1080" fill="url(#v22)"/><rect x="781.4" y="-40" width="7.9" height="1080" fill="url(#v23)"/><rect x="773.5" y="-40" width="7.9" height="1080" fill="url(#v24)"/><rect x="765.7" y="-40" width="7.9" height="1080" fill="url(#v25)"/><rect x="757.8" y="-40" width="7.9" height="1080" fill="url(#v26)"/><rect x="250.0" y="-40" width="507.8" height="1080" fill="url(#v27)"/></g></g></g></mask>
   </defs>
-  <rect x="-600" y="-600" width="2800" height="2600" fill="url(#logo)" mask="url(#pontos)"/>
+  <rect x="-600" y="-600" width="2800" height="2600" fill="#0B4DA2" mask="url(#mAzul)"/>
+  <rect x="-600" y="-600" width="2800" height="2600" fill="#ED1C24" mask="url(#mVerm)"/>
 </svg>
