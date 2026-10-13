@@ -1,0 +1,84 @@
+/* Login padrão Clicheart (aprovado pelo dono em 12/10/2026): retícula no degradê do logo à esquerda,
+   cartão no centro, logo Clicheart à direita (fora do cartão, sem placa). Fonte de verdade:
+   cryo-kuiper/design/login-kit/ (+ o modelo em design/login-modelos/modelo-s3-v5.html).
+   Tudo com prefixo cl- para não colidir com o CSS de cada app. O envio do formulário é do próprio app. */
+@import url("fontes.css");
+
+.cl-login {
+  --cl-azul: #1A3FA8; --cl-azul-esc: #142F80; --cl-vermelho: #E1202A; --cl-grafite: #14161D; --cl-ardosia: #5B616E;
+  --cl-linha: #DCDFE6; --cl-nevoa: #F7F8FC; --cl-erro: #B42318; --cl-erro-fundo: #FEF3F2; --cl-aviso: #8A5A00; --cl-aviso-fundo: #FFF8E6;
+  position: fixed; inset: 0; z-index: 9000; overflow-y: auto; background: var(--cl-nevoa); color: var(--cl-grafite);
+  font-family: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.4;
+  text-align: left; -webkit-font-smoothing: antialiased;
+}
+.cl-login *, .cl-login *::before, .cl-login *::after { box-sizing: border-box; }
+.cl-login[hidden] { display: none !important; }
+.cl-login [hidden] { display: none !important; }
+.cl-arte { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; object-fit: cover; object-position: left top; pointer-events: none; z-index: 0; }
+.cl-logo { position: fixed; z-index: 2; top: 40px; right: calc(40px + clamp(0px, 7vw, 140px)); height: 44px; width: auto; max-width: none; }
+.cl-tela { position: relative; z-index: 1; min-height: 100%; display: grid; align-items: center; justify-items: center; padding: 40px; }
+.cl-cartao { width: 100%; max-width: 440px; margin: 0; background: #fff; border-radius: 18px; padding: 34px 36px 28px;
+  border: 1px solid #E6E9F0; box-shadow: 0 2px 4px rgba(20, 22, 29, .04), 0 30px 70px -28px rgba(20, 22, 29, .35); }
+.cl-sistema { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--cl-azul); margin: 0 0 12px; }
+.cl-sistema::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cl-vermelho); }
+.cl-titulo { font-family: 'Quicksand', 'Nunito Sans', sans-serif; font-size: 30px; font-weight: 700; line-height: 1.2; margin: 0 0 6px; color: var(--cl-grafite); letter-spacing: 0; }
+.cl-sub { color: var(--cl-ardosia); margin: 0 0 26px; font-size: 16px; }
+
+.cl-campo { margin: 0 0 18px; }
+.cl-campo > label { display: block; font-size: 14px; font-weight: 700; color: var(--cl-grafite); margin: 0 0 6px; text-transform: none; letter-spacing: 0; }
+.cl-entrada { position: relative; }
+.cl-entrada .cl-icone { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); fill: none; stroke: var(--cl-ardosia);
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.cl-entrada input { width: 100%; height: 48px; margin: 0; padding: 0 14px 0 44px; font: inherit; font-size: 16px; color: var(--cl-grafite); background: #fff;
+  border: 1.5px solid var(--cl-linha); border-radius: 12px; outline: none; box-shadow: none; transition: border-color .15s, box-shadow .15s; }
+.cl-entrada input::placeholder { color: #8A909C; }
+.cl-entrada input:hover { border-color: #B8BDC8; }
+.cl-entrada input:focus { border-color: var(--cl-azul); box-shadow: 0 0 0 4px rgba(26, 63, 168, .14); }
+.cl-entrada input[aria-invalid="true"] { border-color: var(--cl-erro); }
+.cl-entrada input:-webkit-autofill { -webkit-box-shadow: 0 0 0 40px #fff inset !important; -webkit-text-fill-color: var(--cl-grafite) !important; }
+.cl-senha input { padding-right: 52px; }
+.cl-olho { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; margin: 0; padding: 0; border: 0;
+  background: transparent; border-radius: 10px; cursor: pointer; display: grid; place-items: center; }
+.cl-olho svg { width: 20px; height: 20px; fill: none; stroke: var(--cl-ardosia); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cl-olho:hover { background: var(--cl-nevoa); }
+.cl-olho:focus-visible { outline: 2px solid var(--cl-azul); outline-offset: 1px; }
+
+.cl-aviso, .cl-erro { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.4; border-radius: 10px; padding: 10px 12px; margin: -6px 0 16px; text-align: left; }
+.cl-aviso { color: var(--cl-aviso); background: var(--cl-aviso-fundo); }
+.cl-erro { color: var(--cl-erro); background: var(--cl-erro-fundo); }
+.cl-aviso svg, .cl-erro svg { width: 18px; height: 18px; flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cl-ok { display: flex; gap: 8px; font-size: 14px; border-radius: 10px; padding: 10px 12px; margin: -6px 0 16px; color: #0E7A3C; background: #ECFDF3; }
+
+.cl-botao { width: 100%; height: 50px; margin: 0; border: 0; border-radius: 12px; font: inherit; font-size: 16px; font-weight: 800; color: #fff;
+  background: var(--cl-azul); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 1px 2px rgba(20, 22, 29, .12); transition: background .15s, transform .05s; }
+.cl-botao:hover { background: var(--cl-azul-esc); }
+.cl-botao:active { transform: translateY(1px); }
+.cl-botao:focus-visible { outline: 3px solid rgba(26, 63, 168, .35); outline-offset: 2px; }
+.cl-botao:disabled { cursor: progress; opacity: .85; }
+.cl-giro { width: 18px; height: 18px; border: 2.5px solid rgba(255, 255, 255, .45); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: cl-gira .7s linear infinite; }
+@keyframes cl-gira { to { transform: rotate(360deg); } }
+
+.cl-ajuda { margin: 18px 0 0; font-size: 14px; color: var(--cl-ardosia); text-align: center; line-height: 1.5; }
+.cl-ajuda a, .cl-ajuda button { color: var(--cl-azul); font-weight: 700; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.cl-ajuda a:hover, .cl-ajuda button:hover { text-decoration: underline; }
+.cl-ajuda strong { color: var(--cl-azul); font-weight: 700; }
+.cl-seguro { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: var(--cl-ardosia); margin: 22px 0 0; }
+.cl-seguro svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cl-rodape { position: fixed; z-index: 1; right: 40px; bottom: 18px; margin: 0; font-size: 13px; color: var(--cl-ardosia); }
+
+.cl-treme { animation: cl-treme .35s; }
+@keyframes cl-treme { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+
+@media (max-width: 760px) {
+  /* celular: a retícula ocupa a tela toda e passa por trás do cartão; o topo esmaece (sem caixa) para o logo */
+  .cl-login::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 150px; z-index: 1; pointer-events: none;
+    background: linear-gradient(var(--cl-nevoa) 0, var(--cl-nevoa) 62px, rgba(247, 248, 252, 0) 150px); }
+  .cl-arte { object-position: 22% top; }
+  .cl-logo { position: absolute; top: 22px; right: auto; left: 50%; transform: translateX(-50%); height: 34px; }
+  .cl-tela { padding: 96px 16px 64px; justify-items: stretch; }
+  .cl-cartao { max-width: none; padding: 28px 20px 22px; }
+  .cl-titulo { font-size: 26px; }
+  .cl-rodape { right: 0; left: 0; text-align: center; bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .cl-login * { animation: none !important; transition: none !important; } }
