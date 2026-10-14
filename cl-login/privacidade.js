@@ -1,112 +1,152 @@
-/* Privacidade e cookies — kit único dos sites Clicheart (LGPD, 13/10/2026).
+/* Privacidade e cookies — kit único dos sites Clicheart (LGPD).
  *
- * Carregar no <head>, ANTES de qualquer script que grave preferência (tema-cedo.js, app):
- *   <script src="…/privacidade.js?v=…"></script>  +  <link rel="stylesheet" href="…/privacidade.css?v=…">
+ * Carregar no <head>:  <script src="…/privacidade.js?v=…" data-sistema="painel"></script>  +  privacidade.css
+ *   data-sistema = estoque | testform | painel | mockup | conferente | atendente | elearning | monitor | axon
+ *   data-modo="publico" (página aberta ao público que não guarda nada, ex.: CNPJ): sem barra, só o aviso pelo link.
  *
- * O que faz:
- *  - Necessários (sempre): sessão de login, segurança, rascunho do que a pessoa está digitando e a própria
- *    escolha de privacidade. Nada disso depende de permissão.
- *  - Preferências (só com permissão): tema, filtros, página/aba aberta. Sem permissão o kit NÃO deixa gravar
- *    (localStorage/sessionStorage) e apaga o que já estava gravado. Estatística e publicidade: não existem.
- *  - A escolha vale para todos os *.clicheart.com.br (cookie no domínio) e dura 1 ano; mudar a qualquer hora
- *    pelo link "Privacidade" (qualquer elemento com data-cl-privacidade abre a janela).
- *  - Sem eval, sem estilo inline (funciona com CSP script-src/style-src 'self').
+ * Decisão do dono (13/10/2026, à noite): os sites são de uso interno e só guardam o necessário (login, segurança)
+ * e preferências que ficam no próprio computador da pessoa (tema, filtros) — nada de estatística ou propaganda.
+ * Por isso NÃO se pede permissão: a barra só AVISA no 1º acesso ("Saiba mais" / "Entendi") e o aviso completo de
+ * cada site fica no link "Privacidade" (qualquer elemento com data-cl-privacidade abre a janela).
+ * A ciência vale para todos os *.clicheart.com.br (cookie no domínio, 1 ano). Sem eval e sem estilo inline.
  */
 (function () {
   'use strict';
-  var VERSAO = '1';
-  // data-modo="publico" na tag (página aberta ao público, sem login e sem nada guardado no navegador, ex.: CNPJ):
-  // sem barra de cookies — só o aviso, aberto pelo link do rodapé.
+  var VERSAO = '2';   // mudou o aviso de forma que todos precisem ver de novo? subir aqui
+  var NOME = 'clicheart_privacidade';
   var CFG = (document.currentScript && document.currentScript.dataset) || {};
   var PUBLICO = CFG.modo === 'publico';
-  var NOME = 'clicheart_privacidade';
-  // chaves de PREFERÊNCIA (o resto do armazenamento é necessário: sessão, rascunho, esta escolha)
-  var PREFERENCIAS = [/^clicheart-theme(-v)?$/, /^gestao-/, /^clicheart\.testform\.(aba|cat)$/];
-  var ehPreferencia = function (k) { return PREFERENCIAS.some(function (re) { return re.test(String(k)); }); };
 
-  function lerEscolha() {
+  // ── textos ──
+  var NAV_SESSAO = 'A sessão de login, para você continuar conectado — termina quando você sai ou em até 8 horas.';
+  var NAV_TEMA = 'O tema claro ou escuro que você escolheu.';
+  var NAV_CIENCIA = 'O registro de que você já viu este aviso.';
+  var CONTA = 'Sua conta: nome, e-mail e senha (guardada cifrada, ninguém consegue ler).';
+  var FLUXO_VPS = 'Ficam num servidor contratado na Contabo, em data center na França, com cópia de segurança cifrada guardada por 14 dias.';
+  var FLUXO_CF = 'A Cloudflare (EUA) protege o acesso ao site contra ataques.';
+  var FLUXO_NADA = 'Nada é vendido nem repassado para propaganda.';
+  var PRAZO_CONTA = 'Conta e registro de quem fez cada alteração: guardados enquanto a empresa precisar.';
+  var DIREITOS = [
+    'A Clicheart é a responsável por estes dados.',
+    'Você pode pedir para ver, corrigir ou apagar o que não precisar ser guardado (LGPD, art. 18).',
+    'Para isso, fale com o administrador do sistema ou com a gestão da Clicheart — o canal próprio da LGPD está sendo definido.',
+    'Não usamos cookies de estatística nem de propaganda.',
+  ];
+  var SITES = {
+    estoque: { nome: 'Estoque de chapas',
+      navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'Quem cadastrou, alterou ou apagou retalhos, perdas e contagens (registro de alterações).'],
+      fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: [PRAZO_CONTA] },
+    testform: { nome: 'Testform',
+      navegador: [NAV_SESSAO, 'O rascunho da ficha que você está preenchendo, para não perder o que digitou.', 'A aba que estava aberta.', NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'Fichas de teste de impressão (empresa cliente, máquina, medidas) e as fotos dos testes.', 'Quem gravou cada ficha (registro de alterações).'],
+      fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: [PRAZO_CONTA, 'Fichas e fotos: guardadas enquanto a empresa precisar.'] },
+    painel: { nome: 'Painel de Gestão',
+      navegador: [NAV_SESSAO, 'Filtros, período, relatório e página que você deixou abertos, para o painel abrir do mesmo jeito.', NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA + ' E o que o seu perfil de acesso pode ver.',
+        'Os números vêm do Power BI: faturamento por cliente, produtividade e não conformidades por operador (com o nome do colaborador).',
+        'O painel não grava esses números: lê na hora e guarda por 5 minutos só na memória do servidor.'],
+      fluxo: ['Os números vêm do Power BI (Microsoft).', FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: ['Conta: guardada enquanto a empresa precisar.', 'Números do Power BI: não ficam guardados no painel.'] },
+    mockup: { nome: 'Mockup 3D',
+      navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'Registro técnico de cada entrada (conta e endereço IP), para segurança.',
+        'A arte que você usa no mockup fica só no seu navegador — não é enviada ao servidor.'],
+      fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: ['Conta: guardada enquanto a empresa precisar.', 'Registro técnico de entrada: some sozinho conforme entram registros novos.'] },
+    conferente: { nome: 'Conferência de Arte',
+      navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'Os PDFs de arte enviados e os relatórios da conferência — podem conter dados que estejam impressos na arte.', 'Quem conferiu cada arquivo.'],
+      fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: ['PDFs, relatórios e o histórico de quem conferiu: apagados sozinhos em 4 horas.', 'Conta: guardada enquanto a empresa precisar.'] },
+    atendente: { nome: 'Atendente',
+      navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA + ' E o registro das suas entradas.',
+        'Os pedidos dos clientes: quem enviou, assunto, texto, anexos e o que foi lido para abrir a O.S.'],
+      fluxo: ['A O.S. é aberta no Nucleus.', 'O assistente de IA (Anthropic, EUA) só é usado quando estiver ligado — hoje está desligado.', FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: ['Pedido do cliente, cobrança e histórico do atendimento: apagados sozinhos depois de 30 dias sem movimento — o que vale é a O.S. no Nucleus.',
+        'Conta e registro de entradas: guardados enquanto a empresa precisar.'] },
+    elearning: { nome: 'E-learning',
+      navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'O que você abriu para ler, por quanto tempo, e seus favoritos — para acompanhar o treinamento.'],
+      fluxo: ['O assistente de IA (Anthropic, EUA) só funciona quando estiver ligado — hoje está desligado; a pergunta não é guardada.', FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: [PRAZO_CONTA, 'Leituras e favoritos: guardados enquanto a empresa precisar.'] },
+    monitor: { nome: 'Monitor',
+      navegador: ['A chave de leitura que você digitou para entrar — fica só neste navegador, até você sair.', NAV_TEMA, NAV_CIENCIA],
+      dados: ['Nenhum dado pessoal: o painel mostra só se os sites e os fornecedores estão no ar.'],
+      fluxo: ['O painel é servido pelo GitHub (EUA); a situação dos sites vem do vigia na Cloudflare.', FLUXO_NADA],
+      prazo: ['A chave sai do navegador quando você clica em Sair.'] },
+    axon: { nome: 'AXON',
+      navegador: [NAV_SESSAO, 'A empresa ativa, o painel lateral, as seções recolhidas e o que você escolheu ver nos painéis de Produção e Gravação.', NAV_TEMA, NAV_CIENCIA],
+      dados: [CONTA, 'Cadastro das empresas clientes e dos seus contatos (nome, e-mail, telefone), ordens de serviço, orçamentos e o registro de quem fez cada alteração — para produzir, cobrar e conferir.'],
+      fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+      prazo: ['O prazo de guarda destes dados ainda está sendo definido pela Clicheart; até lá, ficam guardados enquanto a empresa precisar.'] },
+  };
+  var GERAL = { nome: 'Sistemas Clicheart',
+    navegador: [NAV_SESSAO, NAV_TEMA, NAV_CIENCIA],
+    dados: [CONTA, 'O registro de quem fez cada alteração.'],
+    fluxo: [FLUXO_VPS, FLUXO_CF, FLUXO_NADA],
+    prazo: [PRAZO_CONTA] };
+  var PUBLICO_CARTOES = [
+    ['O que acontece com o que você digita', ['O CNPJ vai direto do seu navegador para a BrasilAPI (ou para a CNPJ.ws, se ela não responder), que devolvem os dados públicos da Receita Federal — inclusive nomes de sócios, que são públicos por lei.', 'Nada disso é guardado pela Clicheart.']],
+    ['Cookies', ['Esta página não usa cookies nem guarda nada no seu navegador.', 'A Cloudflare protege o site contra ataques e pode registrar o endereço de acesso (IP) por pouco tempo, para segurança.']],
+    ['Quem cuida e seus direitos', ['A Clicheart mantém esta consulta gratuita.', 'Você pode pedir para ver, corrigir ou apagar dados seus (LGPD, art. 18) falando com a Clicheart — o canal próprio da LGPD está sendo definido.']],
+  ];
+
+  function cartoesDoSite() {
+    if (PUBLICO) return PUBLICO_CARTOES;
+    var s = SITES[CFG.sistema] || GERAL;
+    return [
+      ['O que fica no seu navegador', s.navegador],
+      ['Dados pessoais neste site', s.dados],
+      ['De onde vêm e para onde vão', s.fluxo],
+      ['Por quanto tempo', s.prazo],
+      ['Quem cuida e seus direitos', DIREITOS],
+    ];
+  }
+  function nomeDoSite() { return PUBLICO ? 'Consulta CNPJ' : (SITES[CFG.sistema] || GERAL).nome; }
+
+  // ── ciência (o "Entendi") ──
+  function jaViu() {
     var m = document.cookie.match(new RegExp('(?:^|; )' + NOME + '=([^;]*)'));
     var v = m ? decodeURIComponent(m[1]) : '';
     if (!v) { try { v = localStorage.getItem(NOME) || ''; } catch (e) { v = ''; } }
-    var p = /^v(\d+)\.p([01])\.(\d{8})$/.exec(v);
-    return p && p[1] === VERSAO ? { preferencias: p[2] === '1', em: p[3] } : null;
+    return new RegExp('^v' + VERSAO + '\\.ok\\.\\d{8}$').test(v);
   }
-  function gravarEscolha(preferencias) {
-    var hoje = new Date(), d = hoje.getFullYear() + ('0' + (hoje.getMonth() + 1)).slice(-2) + ('0' + hoje.getDate()).slice(-2);
-    var v = 'v' + VERSAO + '.p' + (preferencias ? '1' : '0') + '.' + d;
+  function marcarVisto() {
+    var h = new Date(), d = h.getFullYear() + ('0' + (h.getMonth() + 1)).slice(-2) + ('0' + h.getDate()).slice(-2);
+    var v = 'v' + VERSAO + '.ok.' + d;
     var dominio = /(^|\.)clicheart\.com\.br$/.test(location.hostname) ? '; Domain=.clicheart.com.br' : '';
     document.cookie = NOME + '=' + v + '; Path=/; Max-Age=31536000; SameSite=Lax' + dominio + (location.protocol === 'https:' ? '; Secure' : '');
-    try { _setItem.call(localStorage, NOME, v); } catch (e) { /* sem armazenamento: vale o cookie */ }
-    escolha = { preferencias: preferencias, em: d };
-    if (!preferencias) { apagarPreferencias(); return; }
-    // permitiu agora: o que a pessoa já escolheu nesta página (ex.: o tema) passa a ficar guardado
-    Object.keys(memoria).forEach(function (c) {
-      try { _setItem.call(c.charAt(0) === 's' ? window.sessionStorage : window.localStorage, c.slice(2), memoria[c]); } catch (e) { /* bloqueado */ }
-    });
-    memoria = {};
+    try { localStorage.setItem(NOME, v); } catch (e) { /* sem armazenamento: vale o cookie */ }
   }
-  function apagarPreferencias() {   // só o que está no disco; a memória da página continua (a tela não muda na hora)
-    [window.localStorage, window.sessionStorage].forEach(function (s) {
-      try { Object.keys(s).filter(ehPreferencia).forEach(function (k) { _removeItem.call(s, k); }); } catch (e) { /* bloqueado */ }
-    });
-  }
-
-  // Trava: sem permissão, preferência NÃO vai para o disco — fica só na memória desta página (o tema troca e a
-  // tela continua lendo o que acabou de escolher; ao recarregar, some). Com permissão, vai para o armazenamento.
-  var _setItem = Storage.prototype.setItem, _getItem = Storage.prototype.getItem, _removeItem = Storage.prototype.removeItem;
-  var escolha = lerEscolha();
-  var permitido = function () { return !!(escolha && escolha.preferencias); };
-  var memoria = {};   // 'l:chave' / 's:chave' → valor (localStorage / sessionStorage), só sem permissão
-  var chaveMem = function (st, k) { return (st === window.sessionStorage ? 's:' : 'l:') + k; };
-  Storage.prototype.setItem = function (k, v) {
-    if (ehPreferencia(k) && !permitido()) { memoria[chaveMem(this, k)] = String(v); return; }
-    return _setItem.call(this, k, v);
-  };
-  Storage.prototype.getItem = function (k) {
-    if (ehPreferencia(k) && !permitido()) { var c = chaveMem(this, k); return Object.prototype.hasOwnProperty.call(memoria, c) ? memoria[c] : null; }
-    return _getItem.call(this, k);
-  };
-  Storage.prototype.removeItem = function (k) {
-    if (ehPreferencia(k)) delete memoria[chaveMem(this, k)];
-    return _removeItem.call(this, k);
-  };
-  if (!permitido()) apagarPreferencias();
 
   // ── tela ──
-  var TEXTO_AVISO = 'Este site usa só o necessário para funcionar (sessão de login e segurança). '
-    + 'Se você permitir, ele também guarda suas preferências neste navegador, como o tema e os filtros. '
-    + 'Não usamos cookies de estatística nem de publicidade.';
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function botao(txt, cls, fn) { var b = el('button', 'clp-bt ' + (cls || ''), txt); b.type = 'button'; b.addEventListener('click', fn); return b; }
 
   var barra = null;
   function fecharBarra() { if (barra) { barra.remove(); barra = null; } }
+  function entendi() { marcarVisto(); fecharBarra(); fecharJanela(); }
   function mostrarBarra() {
     if (barra || !document.body) return;
     barra = el('div', 'clp-barra');
     barra.setAttribute('role', 'region'); barra.setAttribute('aria-label', 'Privacidade e cookies');
-    barra.appendChild(el('p', 'clp-barra-txt', TEXTO_AVISO));
+    var dentro = el('div', 'clp-barra-dentro');
+    var txt = el('div', 'clp-barra-txt');
+    txt.appendChild(el('strong', 'clp-barra-tit', 'Privacidade e cookies'));
+    txt.appendChild(el('span', 'clp-barra-p', 'Este site guarda só o necessário para funcionar (login e segurança) e suas preferências, como o tema e os filtros. Nada de estatística ou propaganda.'));
+    dentro.appendChild(txt);
     var acoes = el('div', 'clp-acoes');
-    acoes.appendChild(botao('Saber mais', 'clp-link', function () { abrirJanela(); }));
-    acoes.appendChild(botao('Só o necessário', 'clp-sec', function () { gravarEscolha(false); fecharBarra(); }));
-    acoes.appendChild(botao('Permitir preferências', 'clp-pri', function () { gravarEscolha(true); fecharBarra(); }));
-    barra.appendChild(acoes);
+    acoes.appendChild(botao('Saiba mais', 'clp-sec', function () { abrirJanela(); }));
+    acoes.appendChild(botao('Entendi', 'clp-pri', entendi));
+    dentro.appendChild(acoes);
+    barra.appendChild(dentro);
     document.body.appendChild(barra);
   }
 
-  var SECOES = [
-    ['Quem cuida dos seus dados', 'A Clicheart, dona destes sistemas internos. Para pedir acesso, correção ou exclusão dos seus dados, fale com o administrador do sistema ou com a gestão da Clicheart (o canal próprio da LGPD está sendo definido).'],
-    ['O que fica no seu navegador', 'Necessários (sempre ligados): a sessão de login, que termina quando você sai ou em até 8 horas; o rascunho do que você está digitando, para não se perder; e esta sua escolha de privacidade. Preferências (só se você permitir): tema claro ou escuro, filtros, período e página aberta. Não há cookies de estatística nem de publicidade.'],
-    ['Dados pessoais nos sistemas', 'Dos colaboradores: nome, e-mail e o registro de quem entrou e do que alterou, para segurança e conferência — guardados enquanto a empresa precisar. Dos clientes, nos atendimentos: o e-mail do pedido e o contato, apagados sozinhos em até 30 dias sem movimento (o que vale é a O.S. no Nucleus).'],
-    ['Onde ficam e com quem', 'Num servidor contratado na Contabo, em data center na França, com cópia de segurança cifrada guardada por 14 dias. A proteção de rede é da Cloudflare (EUA); os relatórios de gestão vêm do Power BI (Microsoft); as O.S. ficam no Nucleus; o painel do Monitor é servido pelo GitHub (EUA). Ninguém mais recebe esses dados.'],
-    ['Seus direitos', 'Pela LGPD (art. 18) você pode confirmar se tratamos seus dados, ter acesso a eles, corrigir, pedir anonimização ou exclusão do que for desnecessário e saber com quem foram compartilhados — pelo contato acima.'],
-  ];
-  var SECOES_PUBLICO = [
-    ['Quem é responsável', 'A Clicheart mantém esta consulta gratuita. Para pedidos sobre dados pessoais, fale com a Clicheart (o canal próprio da LGPD está sendo definido).'],
-    ['O que acontece com o que você digita', 'O CNPJ digitado vai direto do seu navegador para a BrasilAPI (e, se ela não responder, para a CNPJ.ws), que devolvem os dados públicos da Receita Federal — inclusive nomes de sócios, que são públicos por lei. Nada disso é guardado no servidor da Clicheart.'],
-    ['Cookies', 'Esta página não usa cookies nem guarda nada no seu navegador. A Cloudflare protege o site contra ataques e pode registrar o endereço de acesso (IP) por pouco tempo, para segurança.'],
-    ['Seus direitos', 'Pela LGPD (art. 18) você pode confirmar se tratamos seus dados, ter acesso a eles, corrigir e pedir exclusão do que for desnecessário — pelo contato acima.'],
-  ];
   var janela = null;
   function fecharJanela() { if (janela) { janela.remove(); janela = null; } }
   function abrirJanela() {
@@ -114,37 +154,32 @@
     janela = el('div', 'clp-fundo');
     var caixa = el('div', 'clp-janela');
     caixa.setAttribute('role', 'dialog'); caixa.setAttribute('aria-modal', 'true'); caixa.setAttribute('aria-labelledby', 'clpTit');
+    var topo = el('div', 'clp-topo');
+    var tt = el('div', 'clp-topo-txt');
     var tit = el('h2', 'clp-tit', 'Privacidade e cookies'); tit.id = 'clpTit';
-    caixa.appendChild(tit);
-    var corpo = el('div', 'clp-corpo');
-    (PUBLICO ? SECOES_PUBLICO : SECOES).forEach(function (s) { corpo.appendChild(el('h3', 'clp-sub', s[0])); corpo.appendChild(el('p', 'clp-p', s[1])); });
-    if (PUBLICO) {
-      caixa.appendChild(corpo);
-      var so = el('div', 'clp-acoes'); so.appendChild(botao('Fechar', 'clp-pri', function () { fecharJanela(); })); caixa.appendChild(so);
-      janela.appendChild(caixa);
-      janela.addEventListener('click', function (e) { if (e.target === janela) fecharJanela(); });
-      document.body.appendChild(janela);
-      return;
-    }
-    var opc = el('div', 'clp-opcoes');
-    var linha = function (titulo, desc, marcado, travado) {
-      var l = el('label', 'clp-opcao' + (travado ? ' clp-travado' : ''));
-      var c = el('input'); c.type = 'checkbox'; c.checked = marcado; c.disabled = !!travado;
-      var t = el('span', 'clp-opcao-txt'); t.appendChild(el('b', null, titulo)); t.appendChild(el('span', 'clp-opcao-desc', desc));
-      l.appendChild(c); l.appendChild(t); opc.appendChild(l); return c;
-    };
-    linha('Necessários', 'Sessão de login, segurança e rascunho — sempre ligados.', true, true);
-    var pref = linha('Preferências', 'Tema, filtros e página aberta guardados neste navegador.', !!(escolha && escolha.preferencias), false);
-    corpo.appendChild(opc);
-    caixa.appendChild(corpo);
-    var acoes = el('div', 'clp-acoes');
-    acoes.appendChild(botao('Fechar', 'clp-link', function () { fecharJanela(); }));
-    acoes.appendChild(botao('Salvar escolha', 'clp-pri', function () { gravarEscolha(pref.checked); fecharJanela(); fecharBarra(); }));
+    tt.appendChild(tit); tt.appendChild(el('p', 'clp-site', nomeDoSite() + ' · Clicheart'));
+    topo.appendChild(tt);
+    var x = botao('×', 'clp-x', function () { fecharJanela(); }); x.setAttribute('aria-label', 'Fechar');
+    topo.appendChild(x);
+    caixa.appendChild(topo);
+    var grade = el('div', 'clp-grade');
+    cartoesDoSite().forEach(function (c) {
+      var card = el('section', 'clp-card');
+      card.appendChild(el('h3', 'clp-sub', c[0]));
+      var ul = el('ul', 'clp-lista');
+      c[1].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+      card.appendChild(ul);
+      grade.appendChild(card);
+    });
+    caixa.appendChild(grade);
+    var acoes = el('div', 'clp-acoes clp-rodape-janela');
+    if (PUBLICO) acoes.appendChild(botao('Fechar', 'clp-pri', function () { fecharJanela(); }));
+    else acoes.appendChild(botao('Entendi', 'clp-pri', entendi));
     caixa.appendChild(acoes);
     janela.appendChild(caixa);
     janela.addEventListener('click', function (e) { if (e.target === janela) fecharJanela(); });
     document.body.appendChild(janela);
-    pref.focus();
+    x.focus();
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && janela) fecharJanela(); });
   document.addEventListener('click', function (e) {
@@ -153,15 +188,14 @@
   });
 
   function iniciar() {
-    // link no rodapé das telas de login padrão
-    var rod = document.querySelector('.cl-rodape');
+    var rod = document.querySelector('.cl-rodape');   // rodapé das telas de login padrão
     if (rod && !rod.querySelector('[data-cl-privacidade]')) {
       rod.appendChild(document.createTextNode(' · '));
       var a = el('a', 'clp-rodape-link', 'Privacidade e cookies'); a.href = '#'; a.setAttribute('data-cl-privacidade', '');
       rod.appendChild(a);
     }
-    if (!escolha && !PUBLICO) mostrarBarra();
+    if (!PUBLICO && !jaViu()) mostrarBarra();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
-  window.clPrivacidade = { abrir: abrirJanela, escolha: function () { return escolha; } };
+  window.clPrivacidade = { abrir: abrirJanela, jaViu: jaViu };
 })();
