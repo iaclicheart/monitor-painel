@@ -153,6 +153,19 @@ main{flex:1;overflow-y:auto;padding:1.4rem 1.5rem 3rem}
 .affected{font-size:.72rem;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fbbf24;border-radius:8px;padding:.35rem .6rem;margin-top:.55rem}
 [data-theme="light"] .affected{color:#b45309}
 .used{font-size:.7rem;color:var(--m);margin-top:.5rem;line-height:1.45}
+.fase{display:inline-flex;align-items:center;padding:.1rem .55rem;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;border:1px solid transparent}
+.f-ideia,.f-pausado,.f-nada{background:rgba(148,163,184,.16);color:#64748b}
+.f-desenvolvimento{background:rgba(59,130,246,.14);color:#1d4ed8}
+.f-alpha{background:rgba(139,92,246,.14);color:#6d28d9}
+.f-beta{background:rgba(245,158,11,.16);color:#b45309}
+.f-homologacao{background:rgba(6,182,212,.15);color:#0e7490}
+.f-homologado{background:rgba(16,185,129,.15);color:#047857}
+.f-descontinuado{background:transparent;color:#94a3b8;border-color:rgba(148,163,184,.4);text-decoration:line-through}
+[data-theme="dark"] .f-desenvolvimento{color:#93c5fd}[data-theme="dark"] .f-alpha{color:#c4b5fd}[data-theme="dark"] .f-beta{color:#fbbf24}
+[data-theme="dark"] .f-homologacao{color:#67e8f9}[data-theme="dark"] .f-homologado{color:#34d399}
+.a-confirmar{font-size:.62rem;color:var(--m);margin-left:.35rem;white-space:nowrap}
+.proj-fase{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;font-size:.72rem;color:var(--m)}
+.fases-resumo{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem}
 
 /* TABELA */
 table{width:100%;border-collapse:collapse}
@@ -264,6 +277,7 @@ td.muted{color:var(--m)}
     <button class="v-tab" data-view="softwares">Softwares</button>
     <button class="v-tab" data-view="fornecedores">Fornecedores</button>
     <button class="v-tab" data-view="powerbi">Power BI</button>
+    <button class="v-tab" data-view="projetos">Projetos</button>
     <button class="v-tab" data-view="incidentes">Incidentes</button>
   </div>
   <main id="main"><div class="wrap"><div class="empty">Carregando…</div></div></main>
@@ -336,7 +350,7 @@ async function ghFile(path, ref){
   return r.json();
 }
 async function loadGithub(){
-  const [targets, status] = await Promise.all([ghFile('targets.json'), ghFile('status.json', 'status')]);
+  const [targets, status, projetos] = await Promise.all([ghFile('targets.json'), ghFile('status.json', 'status'), ghFile('projetos.json').catch(() => null)]);
   if (!targets) { const e = new Error('chave'); e.auth = true; throw e; }
   const HIST_N = 48;
   const conv = (kind) => (t) => {
@@ -361,7 +375,20 @@ async function loadGithub(){
   });
   return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor')), ...pbi],
     updatedAt: status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
-    ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null };
+    ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null,
+    projetos: projetos?.projetos || [], fases: projetos?.fases || [] };
+}
+
+// Fase do projeto (Alpha, Beta, Homologado...) e quem está testando — vem do projetos.json.
+function faseTag(p){
+  const f = (data.fases || []).find((x) => x.id === p?.fase);
+  const tag = f ? `<span class="fase f-${esc(f.id)}" data-tip="${esc(f.explica)}">${esc(f.nome)}</span>` : '<span class="fase f-nada">fase a definir</span>';
+  return tag + (p && p.confirmado === false ? '<span class="a-confirmar">a confirmar</span>' : '');
+}
+const testando = (p) => (p?.testando?.length ? p.testando.map(esc).join(', ') : '—');
+function projetoDo(it){
+  const ps = (data.projetos || []).filter((p) => p.monitor === it.id);
+  return ps.find((p) => p.id === it.id) || ps[0] || null;
 }
 
 // ── RENDER ──
@@ -389,6 +416,7 @@ function card(it, ctx){
   return `<div class="panel ${st}"><div class="kbar ${BARC[st]}"></div>
     <div class="it-top"><div class="it-name" title="${esc(it.name)}">${title}</div><span class="tag ${TAGC[st]}">${ICON[st]}${(it.kind === 'powerbi' && { up: 'Em dia', down: 'Não atualizou' }[st]) || LABEL[st]}</span></div>
     ${it.what ? `<div class="it-what">${esc(it.what)}</div>` : ''}
+    ${(() => { const p = it.kind === 'software' ? projetoDo(it) : null; return p ? `<div class="proj-fase">${faseTag(p)}<span>testando: ${testando(p)}</span></div>` : ''; })()}
     <div class="it-detail">${esc(it.detail)}</div>
     ${depsDown.length && st !== 'down' ? `<div class="affected">Pode ser afetado: ${depsDown.map((d) => esc(d.name)).join(', ')} com problema</div>` : ''}
     ${strip(it)}
@@ -462,12 +490,30 @@ function render(){
       <b>Power BI:</b> vira incidente quando uma atualização agendada passa 1h30 do horário sem rodar.
     </div></div>`;
 
+  const ordemFase = ['homologacao', 'beta', 'alpha', 'desenvolvimento', 'ideia', 'homologado', 'pausado', 'descontinuado'];
+  const projs = [...(data.projetos || [])].sort((a, b) => {
+    const oa = ordemFase.indexOf(a.fase), ob = ordemFase.indexOf(b.fase);
+    return (oa < 0 ? 99 : oa) - (ob < 0 ? 99 : ob) || a.nome.localeCompare(b.nome, 'pt-BR');
+  });
+  const noAr = (p) => { const m = p.monitor && byId[p.monitor]; return m ? `<span class="tag ${TAGC[m.status]}">${ICON[m.status]}${LABEL[m.status]}</span>` : '<span class="muted">—</span>'; };
+  const resumoFases = (data.fases || []).map((f) => ({ f, n: projs.filter((p) => p.fase === f.id).length })).filter((x) => x.n)
+    .map((x) => `<span class="fase f-${esc(x.f.id)}" data-tip="${esc(x.f.explica)}">${esc(x.f.nome)} · ${x.n}</span>`).join('');
+  const aConfirmar = projs.filter((p) => p.confirmado === false).length;
+  const secProj = `<div class="sec-h"><h3>Projetos</h3><small>${projs.length} projetos, publicados ou não${aConfirmar ? ` · ${aConfirmar} com fase a confirmar` : ''}</small></div>
+    <div class="fases-resumo">${resumoFases}</div>
+    <div class="panel"><div class="scroll"><table><thead><tr><th>Projeto</th><th>Fase</th><th>Quem está testando</th><th>Onde está</th><th>No ar</th><th>Observação</th></tr></thead><tbody>${projs.map((p) =>
+      `<tr><td style="white-space:normal;min-width:12rem"><b>${esc(p.nome)}</b></td><td>${faseTag(p)}</td><td style="white-space:normal">${testando(p)}</td><td class="muted" style="white-space:normal">${esc(p.onde || '—')}</td><td>${noAr(p)}</td><td class="muted" style="white-space:normal;min-width:10rem">${esc(p.obs || '')}</td></tr>`).join('')}</tbody></table></div></div>
+    <div class="panel" style="margin-top:.7rem"><div class="it-what" style="font-size:.78rem;line-height:1.6">
+      <b>Fases:</b> ${(data.fases || []).map((f) => `<b>${esc(f.nome)}</b> = ${esc(f.explica)}`).join(' · ')}.
+      "A confirmar" = fase e testadores sugeridos pelo histórico, ainda não confirmados pelo dono.
+    </div></div>`;
   let body = '';
   const secPb = pb.length ? sec('Power BI', `${count(pb, 'up')} de ${pb.length} em dia`, pb) : '';
   if (view === 'geral') body = kpis + alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw) + secPb + sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
   else if (view === 'powerbi') body = (pb.length ? secPb : '<div class="empty">Aguardando a primeira conferência do Power BI.</div>') + notaPbi;
   else if (view === 'softwares') body = alert + sec('Softwares', `${count(sw, 'up')} de ${sw.length} no ar`, sw);
   else if (view === 'fornecedores') body = sec('Fornecedores', `${count(fn, 'up')} de ${fn.length} operacionais`, fn);
+  else if (view === 'projetos') body = projs.length ? secProj : '<div class="empty">Lista de projetos ainda não publicada.</div>';
   else body = incid;
   $('#main').innerHTML = `<div class="wrap">${body}</div>`;
   $('#hDate').textContent = data.updatedAt ? `atualizado ${ago(data.updatedAt)}` : 'aguardando o vigia';
