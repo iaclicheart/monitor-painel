@@ -396,7 +396,7 @@ async function lerTestadores(n){
   return blocoTestadores((await r.json()).body) || {};
 }
 async function salvarTestadores(id, texto){
-  const nomes = texto.split(',').map((x) => x.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+  const nomes = texto.split(',').map((x) => x.trim().slice(0, 80)).filter(Boolean).slice(0, 10);
   const semPerm = new Error('Sua chave ainda não pode editar. No GitHub: Settings › Developer settings › Fine-grained tokens › a chave do monitor › Edit › Permissions › Issues: Read and write › Update. Depois é só salvar de novo.');
   const r = await ghApi(`/issues/${data.testadoresIssue}`); // relê na hora para não apagar a edição de outra pessoa
   if (r.status === 401 || r.status === 403 || r.status === 404) throw semPerm;
