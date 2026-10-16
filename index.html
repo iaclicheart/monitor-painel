@@ -164,6 +164,11 @@ main{flex:1;overflow-y:auto;padding:1.4rem 1.5rem 3rem}
 [data-theme="dark"] .f-desenvolvimento{color:#93c5fd}[data-theme="dark"] .f-alpha{color:#c4b5fd}[data-theme="dark"] .f-beta{color:#fbbf24}
 [data-theme="dark"] .f-homologacao{color:#67e8f9}[data-theme="dark"] .f-homologado{color:#34d399}
 .a-confirmar{font-size:.62rem;color:var(--m);margin-left:.35rem;white-space:nowrap}
+.btn-mini{font:inherit;font-size:.68rem;font-weight:600;padding:.12rem .5rem;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--m);cursor:pointer;margin-left:.4rem}
+.btn-mini:hover{color:var(--t);border-color:var(--bh)}
+.btn-mini.pri{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.testers-edit{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.testers-edit input{font:inherit;font-size:.8rem;padding:.3rem .5rem;border:1px solid var(--bh);border-radius:6px;min-width:14rem;background:var(--s1);color:var(--t)}
 .proj-fase{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;font-size:.72rem;color:var(--m)}
 .fases-resumo{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem}
 
@@ -323,7 +328,7 @@ const ago = (iso) => {
   if (s < 86400) return `há ${Math.round(s / 3600)} h`;
   return `há ${Math.round(s / 86400)} d`;
 };
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200); }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), msg.length > 80 ? 12000 : 3200); }
 
 // ── TEMA ──
 function paintTheme(){ const dark = document.documentElement.getAttribute('data-theme') !== 'light'; $('#themeBtn').innerHTML = dark ? ICON.sun : ICON.moon; }
@@ -376,8 +381,37 @@ async function loadGithub(){
   return { items: [...targets.softwares.map(conv('software')), ...targets.fornecedores.map(conv('fornecedor')), ...pbi],
     updatedAt: status?.updatedAt, incidents: inc, closed: status?.closed || [], cfBeat: status?.vigias?.cloudflare?.updatedAt || null,
     ghRun: status ? { at: status.updatedAt, ok: true, url: status.runUrl } : null,
-    projetos: projetos?.projetos || [], fases: projetos?.fases || [] };
+    projetos: projetos?.projetos || [], fases: projetos?.fases || [], testadoresIssue: projetos?.testadoresIssue || null,
+    testers: projetos?.testadoresIssue ? await lerTestadores(projetos.testadoresIssue).catch(() => null) : null };
 }
+
+// Quem está testando: guardado numa issue do repositório (#N em projetos.json → testadoresIssue). A chave do site
+// só precisa de "Issues: Read and write" para editar — isso não dá acesso ao código nem aos segredos do monitor.
+const ghApi = (path, opts = {}) => fetch(`https://api.github.com/repos/${REPO}${path}`, { cache: 'no-store', ...opts,
+  headers: { authorization: `Bearer ${store.get(TOKEN_KEY)}`, accept: 'application/vnd.github+json', ...(opts.body ? { 'content-type': 'application/json' } : {}) } });
+const blocoTestadores = (body) => { const m = /```json\s*([\s\S]*?)```/.exec(body || ''); try { return m ? JSON.parse(m[1]) : null; } catch { return null; } };
+async function lerTestadores(n){
+  const r = await ghApi(`/issues/${n}`);
+  if (!r.ok) return null; // chave sem permissão de issues: usa o projetos.json
+  return blocoTestadores((await r.json()).body) || {};
+}
+async function salvarTestadores(id, texto){
+  const nomes = texto.split(',').map((x) => x.trim().slice(0, 40)).filter(Boolean).slice(0, 10);
+  const semPerm = new Error('Sua chave ainda não pode editar. No GitHub: Settings › Developer settings › Fine-grained tokens › a chave do monitor › Edit › Permissions › Issues: Read and write › Update. Depois é só salvar de novo.');
+  const r = await ghApi(`/issues/${data.testadoresIssue}`); // relê na hora para não apagar a edição de outra pessoa
+  if (r.status === 401 || r.status === 403 || r.status === 404) throw semPerm;
+  if (!r.ok) throw new Error(`GitHub respondeu ${r.status}`);
+  const issue = await r.json();
+  const atual = blocoTestadores(issue.body) || {};
+  if (nomes.length) atual[id] = nomes; else delete atual[id];
+  const novo = /```json[\s\S]*?```/.test(issue.body) ? issue.body.replace(/```json[\s\S]*?```/, '```json\n' + JSON.stringify(atual, null, 1) + '\n```')
+    : `${issue.body || ''}\n\n\`\`\`json\n${JSON.stringify(atual, null, 1)}\n\`\`\`\n`;
+  const w = await ghApi(`/issues/${data.testadoresIssue}`, { method: 'PATCH', body: JSON.stringify({ body: novo }) });
+  if (w.status === 401 || w.status === 403 || w.status === 404) throw semPerm;
+  if (!w.ok) throw new Error(`GitHub respondeu ${w.status}`);
+  data.testers = atual;
+}
+let editando = null; // id do projeto cujos testadores estão sendo editados (pausa a atualização automática)
 
 // Fase do projeto (Alpha, Beta, Homologado...) e quem está testando — vem do projetos.json.
 function faseTag(p){
@@ -385,7 +419,8 @@ function faseTag(p){
   const tag = f ? `<span class="fase f-${esc(f.id)}" data-tip="${esc(f.explica)}">${esc(f.nome)}</span>` : '<span class="fase f-nada">fase a definir</span>';
   return tag + (p && p.confirmado === false ? '<span class="a-confirmar">a confirmar</span>' : '');
 }
-const testando = (p) => (p?.testando?.length ? p.testando.map(esc).join(', ') : '—');
+const listaTestadores = (p) => (data.testers && p ? (data.testers[p.id] || []) : (p?.testando || []));
+const testando = (p) => { const l = listaTestadores(p); return l.length ? l.map(esc).join(', ') : '—'; };
 function projetoDo(it){
   const ps = (data.projetos || []).filter((p) => p.monitor === it.id);
   return ps.find((p) => p.id === it.id) || ps[0] || null;
@@ -502,7 +537,9 @@ function render(){
   const secProj = `<div class="sec-h"><h3>Projetos</h3><small>${projs.length} projetos, publicados ou não${aConfirmar ? ` · ${aConfirmar} com fase a confirmar` : ''}</small></div>
     <div class="fases-resumo">${resumoFases}</div>
     <div class="panel"><div class="scroll"><table><thead><tr><th>Projeto</th><th>Fase</th><th>Quem está testando</th><th>Onde está</th><th>No ar</th><th>Observação</th></tr></thead><tbody>${projs.map((p) =>
-      `<tr><td style="white-space:normal;min-width:12rem"><b>${esc(p.nome)}</b></td><td>${faseTag(p)}</td><td style="white-space:normal">${testando(p)}</td><td class="muted" style="white-space:normal">${esc(p.onde || '—')}</td><td>${noAr(p)}</td><td class="muted" style="white-space:normal;min-width:10rem">${esc(p.obs || '')}</td></tr>`).join('')}</tbody></table></div></div>
+      `<tr><td style="white-space:normal;min-width:12rem"><b>${esc(p.nome)}</b></td><td>${faseTag(p)}</td><td style="white-space:normal;min-width:11rem">${editando === p.id
+        ? `<div class="testers-edit"><input id="testersInput" maxlength="300" value="${esc(listaTestadores(p).join(', '))}" placeholder="nomes separados por vírgula"><button class="btn-mini pri" data-salvar-testers="${esc(p.id)}">Salvar</button><button class="btn-mini" data-cancelar-testers>Cancelar</button></div>`
+        : `${testando(p)}${data.testadoresIssue ? `<button class="btn-mini" data-editar-testers="${esc(p.id)}">editar</button>` : ''}`}</td><td class="muted" style="white-space:normal">${esc(p.onde || '—')}</td><td>${noAr(p)}</td><td class="muted" style="white-space:normal;min-width:10rem">${esc(p.obs || '')}</td></tr>`).join('')}</tbody></table></div></div>
     <div class="panel" style="margin-top:.7rem"><div class="it-what" style="font-size:.78rem;line-height:1.6">
       <b>Fases:</b> ${(data.fases || []).map((f) => `<b>${esc(f.nome)}</b> = ${esc(f.explica)}`).join(' · ')}.
       "A confirmar" = fase e testadores sugeridos pelo histórico, ainda não confirmados pelo dono.
@@ -521,7 +558,7 @@ function render(){
 
 let busy = false;
 async function refresh(){
-  if (busy) return;
+  if (busy || editando) return;
   try {
     data = await loadGithub();
     show('app'); render();
@@ -556,7 +593,23 @@ $('#btnOut').onclick = () => {
   setTimeout(() => $('#tokInp').focus(), 80);
 };
 
-document.querySelectorAll('.v-tab').forEach((b) => b.onclick = () => { view = b.dataset.view; render(); $('#main').scrollTop = 0; });
+document.querySelectorAll('.v-tab').forEach((b) => b.onclick = () => { editando = null; view = b.dataset.view; render(); $('#main').scrollTop = 0; });
+// Editar "quem está testando" (aba Projetos)
+$('#main').addEventListener('click', async (e) => {
+  const ed = e.target.closest('[data-editar-testers]'), sv = e.target.closest('[data-salvar-testers]'), cc = e.target.closest('[data-cancelar-testers]');
+  if (ed) { editando = ed.dataset.editarTesters; render(); const i = $('#testersInput'); if (i) { i.focus(); i.select(); } }
+  else if (cc) { editando = null; render(); }
+  else if (sv) {
+    sv.disabled = true; sv.textContent = 'Salvando…';
+    try { await salvarTestadores(sv.dataset.salvarTesters, $('#testersInput').value); editando = null; render(); toast('Salvo.'); }
+    catch (err) { sv.disabled = false; sv.textContent = 'Salvar'; toast(err.message); }
+  }
+});
+$('#main').addEventListener('keydown', (e) => {
+  if (e.target.id !== 'testersInput') return;
+  if (e.key === 'Enter') { e.preventDefault(); $('[data-salvar-testers]')?.click(); }
+  if (e.key === 'Escape') { editando = null; render(); }
+});
 const tip = $('#tip');
 document.addEventListener('mousemove', (e) => {
   const t = e.target.closest && e.target.closest('[data-tip]');
